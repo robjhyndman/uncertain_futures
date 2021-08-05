@@ -1,0 +1,10 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+*_cache/*
+*_files/*
+*.rds
+titlepage.png
+*.tex
+*.log
