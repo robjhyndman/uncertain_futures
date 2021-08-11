@@ -33,18 +33,18 @@ source("functions.R")
 
 ```{r get_local, eval=FALSE, include=FALSE}
 localcases <- readr::read_csv("~/git/covid19ensemble/inputs/local_cases_input.csv") %>%
-    rename(
-      n = count,
-      date = date_onset
-    ) %>%
-    # Adjust count to include cases yet to be detected
-    mutate(n = n / detection_probability) %>%
-    # Remove last days with prob of detection < 0.5
-    filter(detection_probability > 0.5) %>%
-    as_tsibble(index = date, key = state) %>%
+  rename(
+    n = count,
+    date = date_onset
+  ) %>%
+  # Adjust count to include cases yet to be detected
+  mutate(n = n / detection_probability) %>%
+  # Remove last days with prob of detection < 0.5
+  filter(detection_probability > 0.5) %>%
+  as_tsibble(index = date, key = state) %>%
   select(date, state, n) %>%
   filter(state != "AUS")
-saveRDS(localcases,"localcases.rds")
+saveRDS(localcases, "localcases.rds")
 ```
 
 ```{r read_local, echo=FALSE}
@@ -166,23 +166,24 @@ austa <- readabs::read_abs(series_id = "A85375847A") %>%
   select(date, value) %>%
   transmute(
     Month = yearmonth(date),
-    Visitors = value/1e3
+    Visitors = value / 1e3
   ) %>%
   bind_rows(tibble(
-    Month = yearmonth(seq(as.Date("2021-06-01"), by="1 month", length=7)),
+    Month = yearmonth(seq(as.Date("2021-06-01"), by = "1 month", length = 7)),
     Visitors = NA_real_
   )) %>%
-  as_tsibble(index=Month) %>%
+  as_tsibble(index = Month) %>%
   filter(Month >= yearmonth("2000 Jan"))
 # Fit ETS model
 fit <- austa %>%
   filter(Month < yearmonth("2018 Jan")) %>%
   model(ETS(Visitors))
 # Product forecasts
-fc <- forecast(fit, h=48) %>%
+fc <- forecast(fit, h = 48) %>%
   mutate(Month = as.Date(Month))
 # Simulate 100 future sample paths
-sim <- fit %>% generate(h = 48, times = 100) %>%
+sim <- fit %>%
+  generate(h = 48, times = 100) %>%
   mutate(
     replicate = factor(.rep, levels = 1:100, labels = paste("Future", 1:100)),
     .rep = as.numeric(.rep)
@@ -190,15 +191,17 @@ sim <- fit %>% generate(h = 48, times = 100) %>%
   as_tibble() %>%
   mutate(Month = as.Date(Month))
 # Nice colors
-cols <- scale_colour_manual(values = c("#D55E00", "#0072B2","#009E73", "#CC79A7", "#E69F00", "#56B4E9", "#F0E442",sample(rainbow(93))),
-                      breaks = paste("Future", 1:100),
-                      name = " ")
+cols <- scale_colour_manual(
+  values = c("#D55E00", "#0072B2", "#009E73", "#CC79A7", "#E69F00", "#56B4E9", "#F0E442", sample(rainbow(93))),
+  breaks = paste("Future", 1:100),
+  name = " "
+)
 # Now build up some plots with alignment
 p1 <- austa %>%
   mutate(Visitors = if_else(Month >= yearmonth("2018 Jan"), NA_real_, Visitors)) %>%
   as_tibble() %>%
   mutate(Month = as.Date(Month)) %>%
-  ggplot(aes(x=Month, y=Visitors)) +
+  ggplot(aes(x = Month, y = Visitors)) +
   geom_line() +
   labs(
     x = "Month",
@@ -206,30 +209,35 @@ p1 <- austa %>%
     title = "Total short-term visitors to Australia"
   ) +
   scale_x_date(
-    breaks = seq(as.Date("2001-01-01"), by="5 years", l=5),
-    labels = paste("Jan",seq(2000,2020,by=5)),
-    minor_breaks = seq(as.Date("2001-01-01"), by="1 year", l=25)) +
-  ylim(min(austa$Visitors, sim$.sim, na.rm = TRUE), max(austa$Visitors, sim$.sim, na.rm = TRUE)) 
+    breaks = seq(as.Date("2001-01-01"), by = "5 years", l = 5),
+    labels = paste("Jan", seq(2000, 2020, by = 5)),
+    minor_breaks = seq(as.Date("2001-01-01"), by = "1 year", l = 25)
+  ) +
+  ylim(min(austa$Visitors, sim$.sim, na.rm = TRUE), max(austa$Visitors, sim$.sim, na.rm = TRUE))
 p2 <- p1 + cols +
-  geom_line(aes(y = .sim, group=replicate, colour = replicate),
-            data = sim %>% filter(.rep<=1))
+  geom_line(aes(y = .sim, group = replicate, colour = replicate),
+    data = sim %>% filter(.rep <= 1)
+  )
 p3 <- p1 + cols +
-  geom_line(aes(y = .sim, group=replicate, colour = replicate),
-            data = sim %>% filter(.rep<=2))
+  geom_line(aes(y = .sim, group = replicate, colour = replicate),
+    data = sim %>% filter(.rep <= 2)
+  )
 p4 <- p1 + cols +
-  geom_line(aes(y = .sim, group=replicate, colour = replicate),
-            data = sim %>% filter(.rep<=3))
+  geom_line(aes(y = .sim, group = replicate, colour = replicate),
+    data = sim %>% filter(.rep <= 3)
+  )
 p5 <- p1 + cols +
-  geom_line(aes(y = .sim, group=replicate, colour = replicate),
-            data = sim %>% filter(.rep<=10))
+  geom_line(aes(y = .sim, group = replicate, colour = replicate),
+    data = sim %>% filter(.rep <= 10)
+  )
 p6 <- p1 + cols +
-  geom_line(aes(y = .sim, group=replicate, colour = replicate), alpha=0.5, data = sim) +
-  guides(colour="none")
-p7 <- p1 + 
-  geom_line(aes(y = .sim, group=replicate, colour = replicate), alpha=0.5, col='gray', data = sim) +
-  guides(colour="none")
+  geom_line(aes(y = .sim, group = replicate, colour = replicate), alpha = 0.5, data = sim) +
+  guides(colour = "none")
+p7 <- p1 +
+  geom_line(aes(y = .sim, group = replicate, colour = replicate), alpha = 0.5, col = "gray", data = sim) +
+  guides(colour = "none")
 p8 <- p7 + autolayer(fc)
-aligned_plots <- align_patches(p1,p2,p3,p4,p5,p6,p7,p8)
+aligned_plots <- align_patches(p1, p2, p3, p4, p5, p6, p7, p8)
 ```
 
 ## Random futures
@@ -295,7 +303,7 @@ aligned_plots[[6]]
 \forecast
 
 ```{r austa7, dependson='austa'}
-aligned_plots[[7]] 
+aligned_plots[[7]]
 ```
 
 \simfutures
@@ -305,7 +313,7 @@ aligned_plots[[7]]
 \forecast
 
 ```{r aust8, dependson='austa'}
-aligned_plots[[8]] 
+aligned_plots[[8]]
 ```
 
 \simfutures
@@ -315,9 +323,11 @@ aligned_plots[[8]]
 \forecast
 
 ```{r austa9, dependson='austa'}
-aligned_plots[[8]] + geom_line(colour="black", 
-  data=austa %>% filter(Month >= yearmonth("2018 Jan")) %>% mutate(Month = as.Date(Month))
-)
+aligned_plots[[8]] +
+  geom_line(
+    colour = "black",
+    data = austa %>% filter(Month >= yearmonth("2018 Jan")) %>% mutate(Month = as.Date(Month))
+  )
 ```
 
 \simfutures
@@ -370,7 +380,7 @@ pbs <- PBS %>%
 pbs %>%
   filter(ATC2 == "A10") %>%
   model(ETS(Cost)) %>%
-  forecast(h="3 years") %>%
+  forecast(h = "3 years") %>%
   autoplot(pbs)
 ```
 
@@ -380,7 +390,7 @@ pbs %>%
 pbs %>%
   filter(ATC2 == "A05") %>%
   model(ETS(Cost)) %>%
-  forecast(h="3 years") %>%
+  forecast(h = "3 years") %>%
   autoplot(pbs)
 ```
 
@@ -390,7 +400,7 @@ pbs %>%
 pbs %>%
   filter(ATC2 == "D01") %>%
   model(ETS(Cost)) %>%
-  forecast(h="3 years") %>%
+  forecast(h = "3 years") %>%
   autoplot(pbs)
 ```
 
@@ -400,7 +410,7 @@ pbs %>%
 pbs %>%
   filter(ATC2 == "S01") %>%
   model(ETS(Cost ~ trend("N"))) %>%
-  forecast(h="3 years") %>%
+  forecast(h = "3 years") %>%
   autoplot(pbs)
 ```
 
@@ -410,7 +420,7 @@ pbs %>%
 pbs %>%
   filter(ATC2 == "R03") %>%
   model(ETS(Cost)) %>%
-  forecast(h="3 years") %>%
+  forecast(h = "3 years") %>%
   autoplot(pbs)
 ```
 
@@ -420,7 +430,7 @@ pbs %>%
 pbs %>%
   filter(ATC2 == "H02") %>%
   model(ETS(Cost)) %>%
-  forecast(h="3 years") %>%
+  forecast(h = "3 years") %>%
   autoplot(pbs)
 ```
 
@@ -489,7 +499,7 @@ state_colours <- c(
 )
 localcases %>%
   autoplot(n) +
-  labs(x="Date of symptom onset") +
+  labs(x = "Date of symptom onset") +
   scale_color_manual(values = state_colours)
 ```
 
@@ -557,16 +567,18 @@ for (i in seq_along(origins)) {
     ) %>%
     autoplot(level = c(50, 60, 70, 80, 90), point_forecast = lst(median)) +
     autolayer(
-      filter(localcases, state == "VIC",
-             date >= origins[i] - 7 * 12, date <= origins[i] + 7 * 4),
+      filter(
+        localcases, state == "VIC",
+        date >= origins[i] - 7 * 12, date <= origins[i] + 7 * 4
+      ),
       n
     ) +
     scale_x_date(
       breaks = seq(as.Date("2020-01-01"), by = "1 month", l = 24),
       minor_breaks = NULL,
       labels = paste(
-        rep(c("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"), 2),
-        rep(2020:2021, c(12,12))
+        rep(c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"), 2),
+        rep(2020:2021, c(12, 12))
       )
     ) +
     theme(legend.position = "none") +
@@ -623,9 +635,9 @@ $$
 # Turn eval=TRUE to recompute these graphs. They are loaded in the above animategraphics call.
 prob <- seq(0.05, 0.95, by = 0.05)
 df <- expand.grid(
-    error = c(-10, 0, 10),
-    p = c(prob, rev(head(prob, -1)[-1]))
-  ) %>%
+  error = c(-10, 0, 10),
+  p = c(prob, rev(head(prob, -1)[-1]))
+) %>%
   mutate(
     state = rep(seq(length(p) / 3), rep(3, length(p) / 3)),
     qpt = 2 * p * error * (error > 0) - 2 * (1 - p) * error * (error < 0)
@@ -683,9 +695,9 @@ crps %>%
   ) %>%
   ggplot(aes(x = h, y = crps, group = Model, col = Model)) +
   geom_line() +
-  facet_wrap(. ~ state, scales="free_y") +
+  facet_wrap(. ~ state, scales = "free_y") +
   labs(x = "Forecast horizon (days)", y = "CRPS") +
-  scale_color_manual(values = c("#D55E00", "#0072B2","#009E73", "#CC79A7"))
+  scale_color_manual(values = c("#D55E00", "#0072B2", "#009E73", "#CC79A7"))
 ```
 
 \begin{textblock}{14.5}(0.5,8)
