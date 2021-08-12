@@ -31,6 +31,42 @@ library(patchwork)
 source("functions.R")
 ```
 
+```{r cover, include=FALSE}
+# Generate plot for title page
+set.seed(1)
+pdf(file = "figure/cover.pdf", width = 5, height = 2.5)
+austa <- readr::read_csv("http://OTexts.com/fpp3/extrafiles/austa.csv") %>%
+  as_tsibble(index = Year)
+fit <- austa %>% model(ETS(Visitors))
+sim <- fit %>%
+  generate(h = 10, times = 20) %>%
+  mutate(
+    replicate = factor(.rep, levels = 1:20, labels = paste("Future", 1:20))
+  )
+ggplot(austa, aes(x = Year)) +
+  geom_line(aes(y = Visitors, colour = "Data")) +
+  geom_line(aes(y = .sim, colour = replicate), data = sim) +
+  scale_colour_manual(
+    values = c(
+      "#000000", "#D55E00", "#0072B2", "#009E73", "#CC79A7", "#E69F00", "#56B4E9", "#F0E442",
+      sample(rainbow(13))
+    ),
+    breaks = c("Data", paste("Future", 1:20)),
+    name = " "
+  ) +
+  guides(color = "none") +
+  theme_minimal() +
+  scale_y_discrete(breaks = "none") +
+  scale_x_discrete(breaks = "none") +
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+crop::dev.off.crop()
+```
+
 ```{r get_local, eval=FALSE, include=FALSE}
 localcases <- readr::read_csv("~/git/covid19ensemble/inputs/local_cases_input.csv") %>%
   rename(
@@ -381,7 +417,7 @@ pbs %>%
   filter(ATC2 == "A10") %>%
   model(ETS(Cost)) %>%
   forecast(h = "3 years") %>%
-  autoplot(pbs)
+  autoplot(pbs, level=c(50,60,70,80,90))
 ```
 
 ## ETS forecasts of PBS data
@@ -391,7 +427,7 @@ pbs %>%
   filter(ATC2 == "A05") %>%
   model(ETS(Cost)) %>%
   forecast(h = "3 years") %>%
-  autoplot(pbs)
+  autoplot(pbs, level=c(50,60,70,80,90))
 ```
 
 ## ETS forecasts of PBS data
@@ -401,7 +437,7 @@ pbs %>%
   filter(ATC2 == "D01") %>%
   model(ETS(Cost)) %>%
   forecast(h = "3 years") %>%
-  autoplot(pbs)
+  autoplot(pbs, level=c(50,60,70,80,90))
 ```
 
 ## ETS forecasts of PBS data
@@ -411,7 +447,7 @@ pbs %>%
   filter(ATC2 == "S01") %>%
   model(ETS(Cost ~ trend("N"))) %>%
   forecast(h = "3 years") %>%
-  autoplot(pbs)
+  autoplot(pbs, level=c(50,60,70,80,90))
 ```
 
 ## ETS forecasts of PBS data
@@ -421,7 +457,7 @@ pbs %>%
   filter(ATC2 == "R03") %>%
   model(ETS(Cost)) %>%
   forecast(h = "3 years") %>%
-  autoplot(pbs)
+  autoplot(pbs, level=c(50,60,70,80,90))
 ```
 
 ## ETS forecasts of PBS data
@@ -431,7 +467,7 @@ pbs %>%
   filter(ATC2 == "H02") %>%
   model(ETS(Cost)) %>%
   forecast(h = "3 years") %>%
-  autoplot(pbs)
+  autoplot(pbs, level=c(50,60,70,80,90))
 ```
 
 ## Forecasting the PBS
@@ -513,32 +549,34 @@ localcases %>%
 
 \full{jhu_dashboard}
 
-## Model 3: Global AR model (Monash)
+## A model ensemble
 \fontsize{14}{16}\sf
 
-* Uses Johns Hopkins data from countries and regions with sufficient data.
-* Series with obvious anomalies (negative cases and large step changes) removed.
-* $n_{t,i}=$ daily cases on day $t$ in country/region $i$ (scaled so all data have same mean and variance).
-* $y_{t,i} = \phi_1 y_{t-1,i} + \cdots +\phi_p y_{t-p,i} + \varepsilon_{t,i}$\newline where $y_{t,i} = \log(n_{t,i}+0.5)$ and $\varepsilon_{t,i}\sim N(0,\sigma_i^2)$.
-* No stationarity constraints. Common coefficients.
-* Current model has $p=24$ (selected to minimize the 7-day-ahead MAE on recent Australian data).
+### Model 1: SEEIIR (Uni Melbourne/Doherty Institute)
+
+* Stochastic compartmental model with time-varying effective reproduction number.
+
+### Model 2: Generative model (Uni Adelaide)
+
+* Simulation with three types of infectious individuals: imported, asymptomatic, symptomatic
+
+### Model 3: Global AR model (Monash)
+
+* Single model fitted to all Johns Hopkins data from countries and regions with sufficient data.
+* Series with obvious anomalies removed.
 
 ## Forecasting ensemble
 \fontsize{14}{17}\sf
 
-* Forecasts obtained from a mixture distribution of the component models.
-$$\tilde{p}(y_{t+h}|I_t) = \sum_{k=1}^3 w_{t+h|t,k} p_k(y_{t+h}|I_t)$$
-where $p_k(y_{t+h}|I_t)$ is the forecast distribution from model $k$, $I_t$ denotes the data available at time $t$ and the weights $w_{t+h|t,k}>0$ sum to one.
+* Forecasts obtained from a equally-weighted mixture distribution of the component forecasts.
 * Also known as "linear pooling"
 * Works best when individual models are over-confident and use different data sources.
-* We have used equal weights $w_{t+h|t,k}=1/3$.
-
 
 ## Ensemble forecasts: Victoria
 
 ```{r combined_forecasts, eval=FALSE}
 # Read weekly samples files from mediaflux and save as rds file
-fs::dir_ls("~/mediaflux", glob = "*.csv") %>%
+samples <- fs::dir_ls("~/mediaflux", glob = "*.csv") %>%
   stringr::str_subset("combined_samples_202") %>%
   purrr::map_dfr(read_csv) %>%
   nest(sample = sim1:sim2000) %>%
@@ -556,6 +594,7 @@ ensemble <- make_ensemble(samples)
 ```{r some_plots, include=FALSE}
 vic_ensemble <- ensemble %>% filter(state == "VIC")
 origins <- sort(unique(vic_ensemble$forecast_origin))
+origins <- origins[c(2,8,11,33,48,88,106)]
 for (i in seq_along(origins)) {
   p <- vic_ensemble %>%
     filter(forecast_origin == origins[i], date <= origins[i] + 7 * 4) %>%
@@ -591,15 +630,96 @@ for (i in seq_along(origins)) {
 }
 ```
 
-\only<1>{\full{ensemble2}}
-\only<2>{\full{ensemble8}}
-\only<3>{\full{ensemble11}}
-\only<4>{\full{ensemble33}}
-\only<5>{\full{ensemble48}}
-\only<6>{\full{ensemble88}}
-\only<7>{\full{ensemble106}}
+\only<1>{\full{ensemble1}}
+\only<2>{\full{ensemble2}}
+\only<3>{\full{ensemble3}}
+\only<4>{\full{ensemble4}}
+\only<5>{\full{ensemble5}}
+\only<6>{\full{ensemble6}}
+\only<7>{\full{ensemble7}}
 
 <!-- \centerline{\animategraphics[controls,buttonsize=0.3cm,width=14cm]{5}{figs/ensemble}{1}{107}} -->
+
+# Are we uncertain enough?
+
+## Evaluating probabilistic forecasts
+
+```{r, eval=FALSE, include=FALSE}
+# Run to generate the graphs
+qp <- function(p,y) {
+  if(length(p) > 1 & length(y) > 1)
+    stop("Either p or y should be a scalar")
+  fp <- qgamma(p,2)
+  2*(1-p)*abs(y-fp)*(y < fp) + 2*p*abs(y-fp)*(y >= fp)
+}
+actual <- 4.5
+gamma <- tibble(
+  y = seq(0,10,l=101),
+  f = dgamma(y, 2)
+)
+prob <- seq(0.01,0.99,by=0.01)
+for(i in seq_along(prob)) {
+  qactual <- qgamma(prob[i], 2)
+  qpactual <- qp(prob[i], actual)
+  p1 <- gamma %>%
+    ggplot(aes(x=y, y=f)) + 
+    geom_line() + 
+    geom_point(aes(x=actual,y=y), data=tibble(actual=actual,y=0)) +
+    geom_label(aes(x=actual,y=0.02,label="Actual")) +
+    labs(y="Probability density time t", x=latex2exp::TeX("Quantile $f_{p,t}$")) +
+    geom_line(aes(x=y, y=f), col='red', linetype=2,
+      data=tibble(y=rep(actual,2), f=c(0,-0.1))
+    ) +
+    geom_line(aes(x=y, y=f), col='blue',linetype=2,
+      data=tibble(y=rep(qactual,2), f=c(dgamma(qactual,2),-0.1))
+    ) +
+    coord_cartesian(ylim=c(-0,0.375), xlim=c(0,10), expand=FALSE, clip='off')
+  p2 <- tibble(
+      y = seq(0,10,l=101),
+      Q = qp(prob[i], y)
+    ) %>%
+    ggplot(aes(x=y, y=Q)) +
+    geom_line() +
+    labs(x=latex2exp::TeX("Quantile $f_{p,t}$"),
+         y = latex2exp::TeX("Quantile score $Q_{p,t}$")
+    ) +
+    geom_line(aes(x=y, y=Q), col='red',linetype=2,
+      data=tibble(y=c(actual,actual), Q=c(12,qpactual))
+    ) +
+    geom_line(aes(x=y, y=Q), col='red',linetype=2,
+              data=tibble(y=c(actual,-1), Q=rep(qpactual,2))
+    ) +
+    geom_line(aes(x=y, y=f), col='blue',linetype=2,
+      data=tibble(y=rep(qactual,2), f=c(0,12))
+    ) +
+    geom_label(aes(x=qactual,y=11.6, label=paste(sprintf("%.2f",prob[i]), "quantile")), col='blue') +
+    coord_cartesian(ylim=c(0,11.6), xlim=c(0,10), expand=FALSE, clip='off')
+  
+  p3 <- tibble(
+        p = seq(0,0.99,l=101),
+        Q = qp(p, actual)
+      ) %>%
+      filter(p <= prob[i]) %>%
+      ggplot(aes(x=p, y=Q)) +
+      geom_line(col='red') +
+      geom_line(data=tibble(p=c(prob[i],1),Q=rep(qpactual,2)), col='red', linetype=2) +
+      geom_point(data=tibble(p=prob[i],Q=qpactual), col='red') +
+      geom_line(data=tibble(p=rep(prob[i],2), Q=c(0,qpactual)), col='blue', linetype=2) +
+      geom_label(aes(x=prob[i], y=-1, label="0.80"), col='blue') +
+      labs(x=latex2exp::TeX("Probability p"),
+         y = latex2exp::TeX("Quantile score $Q_{p,t}$")
+      ) +
+      coord_cartesian(ylim=c(0,11.6), xlim=c(0,1), expand=FALSE, clip='off')
+  
+  pdf(file=paste0("figure/qs",i,".pdf"), width=15/1.5, height=8/1.5)
+  print((plot_spacer() | p1) / (p3 | p2))
+  crop::dev.off.crop()
+}
+```
+
+\begin{textblock}{15}(0.3,1.4)
+\animategraphics{99}{figure/qs}{1}{99}
+\end{textblock}
 
 ## Evaluating probabilistic forecasts
 
@@ -705,13 +825,6 @@ crps %>%
 For weekly forecasts created from 17 September 2020 to 15 June 2021
 \end{block}
 \end{textblock}
-
-## What have we learned?
-
-* Diverse models in an ensemble are better than one model, especially when they use different information.
-* Understand the data, learn from the data custodians.
-* Have a well-organized workflow for data processing, modelling and generation of forecasts, including version control and reproducible scripts.
-* Communicating probabilistic forecasts is difficult, but consistent visual design is helpful.
 
 ## When should we give up?
 \large
