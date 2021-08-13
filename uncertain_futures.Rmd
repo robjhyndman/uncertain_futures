@@ -26,7 +26,6 @@ options(digits = 3, width = 88)
 library(tidyverse)
 library(fpp3)
 library(distributional)
-library(gganimate)
 library(patchwork)
 source("functions.R")
 ```
@@ -644,7 +643,7 @@ for (i in seq_along(origins)) {
 
 ## Evaluating probabilistic forecasts
 
-```{r, eval=FALSE, include=FALSE}
+```{r qs, include=FALSE}
 # Run to generate the graphs
 qp <- function(p,y) {
   if(length(p) > 1 & length(y) > 1)
@@ -652,12 +651,107 @@ qp <- function(p,y) {
   fp <- qgamma(p,2)
   2*(1-p)*abs(y-fp)*(y < fp) + 2*p*abs(y-fp)*(y >= fp)
 }
-actual <- 4.5
 gamma <- tibble(
   y = seq(0,10,l=101),
   f = dgamma(y, 2)
 )
-prob <- seq(0.01,0.99,by=0.01)
+actual <- 3
+```
+
+```{r pdf1, dependson='qs'}
+# Single pdf graph for median
+prob <- 0.5
+qactual <- qgamma(prob, 2)
+gamma %>%
+  ggplot(aes(x=y, y=f)) + 
+  geom_line() + 
+  geom_point(aes(x=actual,y=y), data=tibble(actual=actual,y=0)) +
+  geom_label(aes(x=actual,y=0.02,label="Actual")) +
+  labs(y="Forecast probability density", x=latex2exp::TeX("Quantile $q_{p}$")) +
+  geom_line(aes(x=y, y=f), col='blue',linetype=2,
+    data=tibble(y=rep(qactual,2), f=c(dgamma(qactual,2),0))
+  ) +
+  geom_label(aes(x=qactual,y=0.02, label="Median"), col='blue') +
+  geom_label(aes(x=qactual,y=-0.01, label="0.5 quantile"), col='blue') +
+  coord_cartesian(ylim=c(-0,0.375), xlim=c(0,10), expand=FALSE, clip='off')
+```
+
+
+## Evaluating probabilistic forecasts
+
+```{r pdf2, dependson='qs'}
+# Single pdf graph for 0.8 quantile
+prob <- 0.9
+qactual <- qgamma(prob, 2)
+gamma %>%
+  ggplot(aes(x=y, y=f)) + 
+  geom_line() + 
+  geom_point(aes(x=actual,y=y), data=tibble(actual=actual,y=0)) +
+  geom_label(aes(x=actual,y=0.02,label="Actual")) +
+  labs(y="Forecast probability density", x=latex2exp::TeX("Quantile $q_{p}$")) +
+  geom_line(aes(x=y, y=f), col='blue',linetype=2,
+    data=tibble(y=rep(qactual,2), f=c(dgamma(qactual,2),0))
+  ) +
+  geom_label(aes(x=qactual,y=-0.01, label=paste(sprintf("%.2f",prob), "quantile")), col='blue') +
+  coord_cartesian(ylim=c(-0,0.375), xlim=c(0,10), expand=FALSE, clip='off')
+```
+
+## Evaluating probabilistic forecasts
+
+```{r pdfqs, dependson='qs'}
+# pdf plus quantile score graph for several quantiles
+prob <- c(0.1, 0.3, 0.5, 0.7, 0.9)
+qactual <- qgamma(prob, 2)
+qpactual <- qp(prob, actual)
+for(i in seq_along(prob)) {
+  p1 <- gamma %>%
+    ggplot(aes(x=y, y=f)) + 
+    geom_line() + 
+    geom_point(aes(x=actual,y=y), data=tibble(actual=actual,y=0)) +
+    labs(y="Forecast probability density", x=latex2exp::TeX("Quantile $q_{p}$")) +
+    geom_line(aes(x=y, y=f), col='blue',linetype=2,
+      data=tibble(y=rep(qactual[i],2), f=c(dgamma(qactual[i],2),0))
+    ) +
+    geom_label(aes(x=actual,y=0.03,label="Actual")) +
+    geom_label(aes(x=qactual[i],y=-0.02, label=paste(sprintf("%.2f",prob[i]), "quantile")), col='blue') +
+    coord_cartesian(ylim=c(-0,0.375), xlim=c(0,10), expand=FALSE, clip='off')
+  p2 <- tibble(
+        y = seq(0,10,l=101),
+        Q = qp(prob[i], y)
+      ) %>%
+      ggplot(aes(x=y, y=Q)) +
+      geom_line() +
+      labs(x=latex2exp::TeX("Quantile $q_{p}$"),
+           y = latex2exp::TeX("Quantile score $S_{p}$")
+      ) +
+      geom_line(aes(x=y, y=Q), col='red',linetype=2,
+        data=tibble(y=c(actual,actual), Q=c(13.5,qpactual[i]))
+      ) +
+      geom_line(aes(x=y, y=Q), col='red',linetype=2,
+                data=tibble(y=c(actual,0), Q=rep(qpactual[i],2))
+      ) +
+      geom_line(aes(x=y, y=f), col='blue',linetype=2,
+        data=tibble(y=rep(qactual[i],2), f=c(0,13.5))
+      ) +
+      coord_cartesian(ylim=c(0,11.6), xlim=c(0,10), expand=FALSE, clip='off')
+  pdf(paste0("figure/pdfqs",i,".pdf"), width=15/1.5, height=8/1.5) 
+  print(p1 / p2)
+  crop::dev.off.crop()
+}
+```
+
+\only<5>{\placefig{0.2}{1.4}{width=14.7cm,height=20cm}{pdfqs1}}
+\only<4>{\placefig{0.2}{1.4}{width=14.7cm,height=20cm}{pdfqs2}}
+\only<3>{\placefig{0.2}{1.4}{width=14.7cm,height=20cm}{pdfqs3}}
+\only<2>{\placefig{0.2}{1.4}{width=14.7cm,height=20cm}{pdfqs4}}
+\only<1>{\placefig{0.2}{1.4}{width=14.7cm,height=20cm}{pdfqs5}}
+
+## Evaluating probabilistic forecasts
+
+```{r pdfqs2, include=FALSE, dependson='qs'}
+qs <- seq(0.01,10,l=200)
+prob <- pgamma(qs, 2)
+prob <- c(prob[prob <= 0.999], 0.9999)
 for(i in seq_along(prob)) {
   qactual <- qgamma(prob[i], 2)
   qpactual <- qp(prob[i], actual)
@@ -666,7 +760,7 @@ for(i in seq_along(prob)) {
     geom_line() + 
     geom_point(aes(x=actual,y=y), data=tibble(actual=actual,y=0)) +
     geom_label(aes(x=actual,y=0.02,label="Actual")) +
-    labs(y="Probability density time t", x=latex2exp::TeX("Quantile $f_{p,t}$")) +
+    labs(y="Forecasting probability density", x=latex2exp::TeX("Quantile $q_{p}$")) +
     geom_line(aes(x=y, y=f), col='red', linetype=2,
       data=tibble(y=rep(actual,2), f=c(0,-0.1))
     ) +
@@ -680,8 +774,8 @@ for(i in seq_along(prob)) {
     ) %>%
     ggplot(aes(x=y, y=Q)) +
     geom_line() +
-    labs(x=latex2exp::TeX("Quantile $f_{p,t}$"),
-         y = latex2exp::TeX("Quantile score $Q_{p,t}$")
+    labs(x=latex2exp::TeX("Quantile $q_{p}$"),
+         y = latex2exp::TeX("Quantile score $S_{p}$")
     ) +
     geom_line(aes(x=y, y=Q), col='red',linetype=2,
       data=tibble(y=c(actual,actual), Q=c(12,qpactual))
@@ -692,22 +786,23 @@ for(i in seq_along(prob)) {
     geom_line(aes(x=y, y=f), col='blue',linetype=2,
       data=tibble(y=rep(qactual,2), f=c(0,12))
     ) +
-    geom_label(aes(x=qactual,y=11.6, label=paste(sprintf("%.2f",prob[i]), "quantile")), col='blue') +
+    geom_label(aes(x=qactual,y=11.6, label=paste(sprintf("%.3f",prob[i]), "quantile")), col='blue') +
     coord_cartesian(ylim=c(0,11.6), xlim=c(0,10), expand=FALSE, clip='off')
   
-  p3 <- tibble(
-        p = seq(0,0.99,l=101),
-        Q = qp(p, actual)
+  p3data <- tibble(
+        p = prob,
+        Q = qp(prob, actual)
       ) %>%
-      filter(p <= prob[i]) %>%
+      filter(p <= prob[i])
+  p3 <- p3data  %>%
       ggplot(aes(x=p, y=Q)) +
       geom_line(col='red') +
+      geom_polygon(fill='#ffbbbb', 
+            data = bind_rows(p3data, tibble(p=prob[i], Q=0))) +
       geom_line(data=tibble(p=c(prob[i],1),Q=rep(qpactual,2)), col='red', linetype=2) +
-      geom_point(data=tibble(p=prob[i],Q=qpactual), col='red') +
-      geom_line(data=tibble(p=rep(prob[i],2), Q=c(0,qpactual)), col='blue', linetype=2) +
-      geom_label(aes(x=prob[i], y=-1, label="0.80"), col='blue') +
+      #geom_point(data=tibble(p=prob[i],Q=qpactual), col='red') +
       labs(x=latex2exp::TeX("Probability p"),
-         y = latex2exp::TeX("Quantile score $Q_{p,t}$")
+         y = latex2exp::TeX("Quantile score $S_{p}$")
       ) +
       coord_cartesian(ylim=c(0,11.6), xlim=c(0,1), expand=FALSE, clip='off')
   
@@ -717,9 +812,19 @@ for(i in seq_along(prob)) {
 }
 ```
 
-\begin{textblock}{15}(0.3,1.4)
-\animategraphics{99}{figure/qs}{1}{99}
+\begin{textblock}{18}(0.3,1.4)
+\animategraphics[width=14cm,height=20cm,keepaspectratio]{185}{figure/qs}{1}{185}
 \end{textblock}
+
+## Evaluating probabilistic forecasts
+
+\begin{textblock}{18}(0.3,1.4)
+\includegraphics[width=14cm,height=20cm,keepaspectratio]{figure/qs185}
+\end{textblock}
+
+\only<2>{\begin{textblock}{4}(2,7)\fontsize{11}{11}\sf
+\textcolor{red}{Area = CRPS}
+\end{textblock}}
 
 ## Evaluating probabilistic forecasts
 

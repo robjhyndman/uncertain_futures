@@ -8,3 +8,6 @@
 titlepage.png
 *.tex
 *.log
+figure/qs*.pdf
+figure/pdfqs*.pdf
+figure/ensemble*.pdf
