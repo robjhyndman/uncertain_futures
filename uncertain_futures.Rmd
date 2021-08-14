@@ -725,7 +725,7 @@ for(i in seq_along(prob)) {
            y = latex2exp::TeX("Quantile score $S_{p}$")
       ) +
       geom_line(aes(x=y, y=Q), col='red',linetype=2,
-        data=tibble(y=c(actual,actual), Q=c(13.5,qpactual[i]))
+        data=tibble(y=c(actual,actual), Q=c(14.5,qpactual[i]))
       ) +
       geom_line(aes(x=y, y=Q), col='red',linetype=2,
                 data=tibble(y=c(actual,0), Q=rep(qpactual[i],2))
@@ -749,7 +749,7 @@ for(i in seq_along(prob)) {
 ## Evaluating probabilistic forecasts
 
 ```{r pdfqs2, include=FALSE, dependson='qs'}
-qs <- seq(0.01,10,l=200)
+qs <- seq(0,10,l=200)
 prob <- pgamma(qs, 2)
 prob <- c(prob[prob <= 0.999], 0.9999)
 for(i in seq_along(prob)) {
@@ -761,9 +761,6 @@ for(i in seq_along(prob)) {
     geom_point(aes(x=actual,y=y), data=tibble(actual=actual,y=0)) +
     geom_label(aes(x=actual,y=0.02,label="Actual")) +
     labs(y="Forecasting probability density", x=latex2exp::TeX("Quantile $q_{p}$")) +
-    geom_line(aes(x=y, y=f), col='red', linetype=2,
-      data=tibble(y=rep(actual,2), f=c(0,-0.1))
-    ) +
     geom_line(aes(x=y, y=f), col='blue',linetype=2,
       data=tibble(y=rep(qactual,2), f=c(dgamma(qactual,2),-0.1))
     ) +
@@ -778,7 +775,7 @@ for(i in seq_along(prob)) {
          y = latex2exp::TeX("Quantile score $S_{p}$")
     ) +
     geom_line(aes(x=y, y=Q), col='red',linetype=2,
-      data=tibble(y=c(actual,actual), Q=c(12,qpactual))
+      data=tibble(y=rep(actual,2), Q=c(14.5,qpactual))
     ) +
     geom_line(aes(x=y, y=Q), col='red',linetype=2,
               data=tibble(y=c(actual,-1), Q=rep(qpactual,2))
@@ -828,36 +825,39 @@ for(i in seq_along(prob)) {
 
 ## Evaluating probabilistic forecasts
 
-\begin{textblock}{9.5}(0.2,1.2)
+\begin{textblock}{9.5}(3.2,1.2)
 \begin{alertblock}{}\vspace*{-0.2cm}
 \begin{align*}
-f_{p,t} &= \text{quantile forecast with prob. $p$ at time $t$.}\\
+q_{p,t} &= \text{quantile forecast with prob. $p$ at time $t$.}\\
 y_{t} &= \text{observation at time $t$}
 \end{align*}
 \end{alertblock}\vspace*{-0.3cm}
 \uncover<2->{\begin{block}{Quantile score}\vspace*{-0.1cm}
 $$
-  Q_{p,t} = \begin{cases}
-  2(1 - p) \big|y_t - f_{p,t}\big|, & \text{if $y_{t} < f_{p,t}$}\\
-  2p \big|y_{t} - f_{p,t}\big|, & \text{if $y_{t} \ge f_{p,t}$} \end{cases}
+  S_{p,t} = \begin{cases}
+  2(1 - p) \big|y_t - q_{p,t}\big|, & \text{if $y_{t} < q_{p,t}$}\\
+  2p \big|y_{t} - q_{p,t}\big|, & \text{if $y_{t} \ge q_{p,t}$} \end{cases}
 $$
 \end{block}}
 \end{textblock}
 \begin{textblock}{15}(0.2,5.8)
 \uncover<4->{
 \begin{itemize}\itemsep=0cm\parskip=0cm
-\item Low $Q_{p,t}$ is good
+\item Low $S_{p,t}$ is good
 \item Multiplier of 2 often omitted, but useful for interpretation
-\item $Q_{p,t}$ like absolute error (weighted to account for likely exceedance)
-\item Average $Q_{p,t}$ over $p$ = CRPS (Continuous Ranked Probability Score)
+\item $S_{p,t}$ like absolute error (weighted to account for likely exceedance)
+\item Average $S_{p,t}$ over $p$ = CRPS (Continuous Ranked Probability Score)
 \end{itemize}}
 \end{textblock}
-\begin{textblock}{6}(10,2)
+
+<!-- \begin{textblock}{6}(10,2)
 \only<3->{\animategraphics[loop,autoplay]{10}{uncertain_futures_files/figure-beamer/pinball-}{1}{100}}
 \end{textblock}
+ -->
 
 ```{r pinball, eval=FALSE, echo=FALSE, fig.show='animate', interval=1/10, message=FALSE, fig.height=3, fig.width=5, cache=FALSE}
 # Turn eval=TRUE to recompute these graphs. They are loaded in the above animategraphics call.
+library(gganimate)
 prob <- seq(0.05, 0.95, by = 0.05)
 df <- expand.grid(
   error = c(-10, 0, 10),
@@ -874,32 +874,33 @@ labels <- df %>%
 df %>% ggplot(aes(x = error, y = qpt)) +
   geom_line(aes(group = state), colour = "red") +
   labs(
-    x = latex2exp::TeX("Error: $y_t - f_{p,t}$"),
-    y = latex2exp::TeX("Q_{p,t}")
+    x = latex2exp::TeX("Error: $y_t - q_{p,t}$"),
+    y = latex2exp::TeX("S_{p,t}")
   ) +
   geom_label(data = labels, aes(x = 0, y = 17, label = label)) +
   transition_states(state)
 ```
 
+<!--
 ## CRPS: Continuous Ranked Probability Score
 \vspace*{-0.8cm}\fontsize{13}{14}\sf\color{black}
 \begin{align*}
 y_{t} &= \text{observation at time $t$}\\
 F_{t}(u) &= \text{Pr}(Y_{t} \le u) = \text{forecast distribution}\\
-f_{p,t} &= F^{-1}_t(p) = \text{quantile forecast with prob. $p$}\\
-  Q_{p,t} &= \begin{cases}
-  2(1 - p) \big|y_t - f_{p,t}\big|, & \text{if $y_{t} < f_{p,t}$}\\
-  2p \big|y_{t} - f_{p,t}\big|, & \text{if $y_{t} \ge f_{p,t}$} \end{cases} \\
+q_{p,t} &= F^{-1}_t(p) = \text{quantile forecast with prob. $p$}\\
+  S_{p,t} &= \begin{cases}
+  2(1 - p) \big|y_t - q_{p,t}\big|, & \text{if $y_{t} < q_{p,t}$}\\
+  2p \big|y_{t} - q_{p,t}\big|, & \text{if $y_{t} \ge q_{p,t}$} \end{cases} \\
 Y_t \text{ and } Y_t^* &\sim \text{iid with distribution $F_t$.}
 \end{align*}
 
 ###
 \begin{align*}
  \text{CRPS}_t
-   & = \int_0^1 Q_{p,t}\, dp \\
+   & = \int_0^1 S_{p,t}\, dp \\
    & = \int_{-\infty}^\infty \left[F_t(u) - 1_{y_t \le u}\right]^2 du \\
    & = \textstyle\text{E}|Y_t-y_t| - \frac{1}{2}\text{E}|Y_t-Y_t^*|
-\end{align*}
+\end{align*} -->
 
 ## CRPS: Continuous Ranked Probability Score
 
@@ -921,7 +922,7 @@ crps %>%
   ggplot(aes(x = h, y = crps, group = Model, col = Model)) +
   geom_line() +
   facet_wrap(. ~ state, scales = "free_y") +
-  labs(x = "Forecast horizon (days)", y = "CRPS") +
+  labs(x = "Forecast horizon (days)", y = "Average CRPS") +
   scale_color_manual(values = c("#D55E00", "#0072B2", "#009E73", "#CC79A7"))
 ```
 
