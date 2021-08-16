@@ -88,6 +88,24 @@ localcases <- readRDS("localcases.rds")
 
 # What can we forecast?
 
+## Reputations can be made and lost
+
+\begin{block}{}``I think there is a world market for maybe
+    five computers.'' \newline{\null\hfill\small (Chairman of IBM,
+    1943)}\end{block}\pause
+
+\begin{block}{}``There is no reason anyone would want a
+    computer in their home.'' \newline\null\hfill{\small (President, DEC,
+    1977)}\end{block}\pause
+
+\begin{alertblock}{}``We're going to be opening relatively soon \dots The virus \dots\ will go away in April.''\hfill{\small (Donald Trump, February 2020)}\end{alertblock}\pause
+
+\begin{alertblock}{}``We expect that Australians will be fully vaccinated by the end of October.''\hfill{\small (Scott Morrison, December 2020)}\end{alertblock}
+
+## Forecasting is difficult
+
+\fullheight{hopecasts}
+
 ## What can we forecast?
 
 \fullheight{AusBOM}
@@ -112,21 +130,11 @@ localcases <- readRDS("localcases.rds")
 
 ## What can we forecast?
 
-\placefig{0}{1.35}{height=10.7cm, width=20cm}{bocsar}
-
-## What can we forecast?
-
-\placefig{0}{1.35}{height=10.7cm, width=20cm}{monash_students}
+\placefig{0}{1.35}{height=9.2cm, width=20cm}{covid}
 
 ## What can we forecast?
 
 \placefig{0}{1.35}{height=10.2cm, width=20cm}{12apostles}
-
-## What can we forecast?
-
-\placefig{0}{1.35}{height=9.2cm, width=20cm}{covid}
-
-# Forecastability factors
 
 ## Which is easiest to forecast?
 
@@ -168,26 +176,6 @@ Something is easier to forecast if:
  2. there is lots of data available;
  3. the future is somewhat similar to the past
  4. the forecasts cannot affect the thing we are trying to forecast.
-
-# Forecasting is difficult
-
-## Reputations can be made and lost
-
-\begin{block}{}``I think there is a world market for maybe
-    five computers.'' \newline{\null\hfill\small (Chairman of IBM,
-    1943)}\end{block}\pause
-
-\begin{block}{}``There is no reason anyone would want a
-    computer in their home.'' \newline\null\hfill{\small (President, DEC,
-    1977)}\end{block}\pause
-
-\begin{alertblock}{}``We're going to be opening relatively soon \dots The virus \dots\ will go away in April.''\hfill{\small (Donald Trump, February 2020)}\end{alertblock}\pause
-
-\begin{alertblock}{}``We expect that Australians will be fully vaccinated by the end of October.''\hfill{\small (Scott Morrison, December 2020)}\end{alertblock}
-
-## Forecasting is difficult
-
-\fullheight{hopecasts}
 
 ## Improving forecasts
 
@@ -367,9 +355,13 @@ aligned_plots[[8]] +
 
 \simfutures
 
-# PBS forecasting
+# Forecasting PBS expenditure
 
-## PBS forecasting
+## Forecasting PBS expenditure
+
+\placefig{0}{1.35}{height=11.2cm, width=20cm}{pills}
+
+## Forecasting PBS expenditure
 
 ### The Pharmaceutical Benefits Scheme (PBS) is the Australian government drugs subsidy scheme.
 
@@ -377,10 +369,10 @@ aligned_plots[[8]] +
   * The cost to government is determined by the number and types of drugs purchased. Currently nearly 1\% of GDP.
   * The total cost is budgeted based on forecasts of drug usage.
 
-## PBS forecasting
+## Forecasting PBS expenditure
 \fullheight{pbs2}
 
-## PBS forecasting
+## Forecasting PBS expenditure
 
   * In 2001: \$4.5 billion budget, under-forecasted by \$800 million.
   * Thousands of products. Seasonal demand.
@@ -469,7 +461,7 @@ pbs %>%
   autoplot(pbs, level=c(50,60,70,80,90))
 ```
 
-## Forecasting the PBS
+## Forecasting PBS expenditure
 \fontsize{14}{15}\sf
 
   * Developed an automatic forecasting algorithm for exponential smoothing state space models based on the AIC.
@@ -502,7 +494,20 @@ pbs %>%
   * Nearly ten years later, Hyndman et al (CSDA, 2011) proposed forecast reconciliation to handle hierarchical time series.
   * Now widely used in business and industry and implemented in the `hts` and `fable` packages.
 
-# COVID19 case forecasting
+# Forecasting peak electricity demand
+
+## Forecasting peak electricity demand
+
+\placefig{0}{1.35}{height=9.2cm, width=20cm}{elecwires}
+\begin{textblock}{12}(0.2,8.8)\tiny\textcolor{gray}{\texttt{Varistor60, CC BY-SA 4.0, https://commons.wikimedia.org/w/index.php?curid=59368531}}
+\end{textblock}
+
+
+# Forecasting COVID19 cases
+
+## Forecasting COVID19 cases
+
+\placefig{0}{1.35}{height=9.2cm, width=20cm}{covid}
 
 ## Data sources
 
@@ -639,7 +644,14 @@ for (i in seq_along(origins)) {
 
 <!-- \centerline{\animategraphics[controls,buttonsize=0.3cm,width=14cm]{5}{figs/ensemble}{1}{107}} -->
 
-# Are we uncertain enough?
+# Forecasting post-pandemic tourism 
+
+## Forecasting post-pandemic tourism 
+
+\placefig{0}{1.35}{height=10.2cm, width=20cm}{12apostles}
+
+
+# Assessing forecast uncertainty
 
 ## Evaluating probabilistic forecasts
 
