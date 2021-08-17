@@ -27,12 +27,12 @@ library(tidyverse)
 library(fpp3)
 library(distributional)
 library(patchwork)
+library(gganimate)
 source("functions.R")
 ```
 
 ```{r cover, include=FALSE}
 # Generate plot for title page
-set.seed(1)
 pdf(file = "figure/cover.pdf", width = 5, height = 2.5)
 austa <- readr::read_csv("http://OTexts.com/fpp3/extrafiles/austa.csv") %>%
   as_tsibble(index = Year)
@@ -108,33 +108,15 @@ localcases <- readRDS("localcases.rds")
 
 ## What can we forecast?
 
-\fullheight{AusBOM}
-
-## What can we forecast?
-
-\placefig{0}{1.35}{height=10.8cm, width=20cm}{nasdaq-stock-market}
-
-## What can we forecast?
-
-\placefig{0}{1.35}{height=10.2cm, width=20cm}{Forex2}
-
-## What can we forecast?
-
-\placefig{0}{1.35}{height=11.2cm, width=20cm}{pills}
-
-## What can we forecast?
-
-\placefig{0}{1.35}{height=9.2cm, width=20cm}{elecwires}
+\only<1>{\fullheight{AusBOM}}
+\only<2>{\placefig{0}{1.35}{height=10.8cm, width=20cm}{nasdaq-stock-market}}
+\only<3>{\placefig{0}{1.35}{height=10.2cm, width=20cm}{Forex2}}
+\only<4>{\placefig{0}{1.35}{height=11.2cm, width=20cm}{pills}}
+\only<5>{\placefig{0}{1.35}{height=9.2cm, width=20cm}{elecwires}
 \begin{textblock}{12}(0.2,8.8)\tiny\textcolor{gray}{\texttt{Varistor60, CC BY-SA 4.0, https://commons.wikimedia.org/w/index.php?curid=59368531}}
-\end{textblock}
-
-## What can we forecast?
-
-\placefig{0}{1.35}{height=9.2cm, width=20cm}{covid}
-
-## What can we forecast?
-
-\placefig{0}{1.35}{height=10.2cm, width=20cm}{12apostles}
+\end{textblock}}
+\only<6>{\placefig{0}{1.35}{height=9.2cm, width=20cm}{covid}}
+\only<7>{\placefig{0}{1.35}{height=10.2cm, width=20cm}{12apostles}}
 
 ## Which is easiest to forecast?
 
@@ -172,20 +154,17 @@ localcases <- readRDS("localcases.rds")
 
 Something is easier to forecast if:
 
- 1. we have a good understanding of the factors that contribute to it
+ 1. we have a good understanding of the factors that contribute to it, and can measure them.
  2. there is lots of data available;
  3. the future is somewhat similar to the past
  4. the forecasts cannot affect the thing we are trying to forecast.
-
-## Improving forecasts
-
-\fullheight{ncep-skill}
 
 # The statistical forecasting perspective
 
 ```{r austa}
 # Grab ABS data
-austa <- readabs::read_abs(series_id = "A85375847A") %>%
+austa <- readxl::read_excel("340101.xls", sheet="Data1", skip=9) %>%
+  rename(date = `Series ID`, value = A85375847A) %>%
   select(date, value) %>%
   transmute(
     Month = yearmonth(date),
@@ -205,6 +184,7 @@ fit <- austa %>%
 fc <- forecast(fit, h = 48) %>%
   mutate(Month = as.Date(Month))
 # Simulate 100 future sample paths
+set.seed(1967)
 sim <- fit %>%
   generate(h = 48, times = 100) %>%
   mutate(
@@ -232,7 +212,7 @@ p1 <- austa %>%
     title = "Total short-term visitors to Australia"
   ) +
   scale_x_date(
-    breaks = seq(as.Date("2001-01-01"), by = "5 years", l = 5),
+    breaks = seq(as.Date("2000-01-01"), by = "5 years", l = 5),
     labels = paste("Jan", seq(2000, 2020, by = 5)),
     minor_breaks = seq(as.Date("2001-01-01"), by = "1 year", l = 25)
   ) +
@@ -259,8 +239,9 @@ p6 <- p1 + cols +
 p7 <- p1 +
   geom_line(aes(y = .sim, group = replicate, colour = replicate), alpha = 0.5, col = "gray", data = sim) +
   guides(colour = "none")
-p8 <- p7 + autolayer(fc)
-aligned_plots <- align_patches(p1, p2, p3, p4, p5, p6, p7, p8)
+p8 <- p7 + autolayer(fc, level = c(50, 90))
+p9 <- p8 + coord_cartesian(xlim=as.Date(c("2013-01-01","2021-08-01")))
+aligned_plots <- align_patches(p1, p2, p3, p4, p5, p6, p7, p8,p9)
 ```
 
 ## Random futures
@@ -335,7 +316,7 @@ aligned_plots[[7]]
 
 \forecast
 
-```{r aust8, dependson='austa'}
+```{r austa8, dependson='austa'}
 aligned_plots[[8]]
 ```
 
@@ -346,7 +327,18 @@ aligned_plots[[8]]
 \forecast
 
 ```{r austa9, dependson='austa'}
-aligned_plots[[8]] +
+aligned_plots[[9]]
+```
+
+\simfutures
+
+
+## Random futures
+
+\forecast
+
+```{r austa9b, dependson='austa'}
+aligned_plots[[9]] +
   geom_line(
     colour = "black",
     data = austa %>% filter(Month >= yearmonth("2018 Jan")) %>% mutate(Month = as.Date(Month))
@@ -374,11 +366,15 @@ aligned_plots[[8]] +
 
 ## Forecasting PBS expenditure
 
-  * In 2001: \$4.5 billion budget, under-forecasted by \$800 million.
-  * Thousands of products. Seasonal demand.
-  * Subject to covert marketing, volatile products, uncontrollable expenditure.
-  * Although monthly data available for 10 years, data are aggregated to annual values, and only the first three years are used in estimating the forecasts.
-  * All forecasts being done with the \texttt{FORECAST} function in MS-Excel!
+\begin{block}{The phone call (2001)}
+\begin{itemize}
+\item \$4.5 billion PBS budget, under-forecasted by \$800 million.
+\item Thousands of products. Seasonal demand.
+\item Subject to covert marketing, volatile products, uncontrollable expenditure.
+\item Although monthly data available for 10 years, data are aggregated to annual values, and only the first three years are used in estimating the forecasts.
+\item All forecasts being done with the \texttt{FORECAST} function in MS-Excel!
+\end{itemize}
+\end{block}
 
 ## ATC drug classification
 
@@ -408,7 +404,7 @@ pbs %>%
   filter(ATC2 == "A10") %>%
   model(ETS(Cost)) %>%
   forecast(h = "3 years") %>%
-  autoplot(pbs, level=c(50,60,70,80,90))
+  autoplot(pbs, level = c(50, 90))
 ```
 
 ## ETS forecasts of PBS data
@@ -418,7 +414,7 @@ pbs %>%
   filter(ATC2 == "A05") %>%
   model(ETS(Cost)) %>%
   forecast(h = "3 years") %>%
-  autoplot(pbs, level=c(50,60,70,80,90))
+  autoplot(pbs, level = c(50, 90))
 ```
 
 ## ETS forecasts of PBS data
@@ -428,7 +424,7 @@ pbs %>%
   filter(ATC2 == "D01") %>%
   model(ETS(Cost)) %>%
   forecast(h = "3 years") %>%
-  autoplot(pbs, level=c(50,60,70,80,90))
+  autoplot(pbs, level = c(50, 90))
 ```
 
 ## ETS forecasts of PBS data
@@ -438,7 +434,7 @@ pbs %>%
   filter(ATC2 == "S01") %>%
   model(ETS(Cost ~ trend("N"))) %>%
   forecast(h = "3 years") %>%
-  autoplot(pbs, level=c(50,60,70,80,90))
+  autoplot(pbs, level = c(50, 90))
 ```
 
 ## ETS forecasts of PBS data
@@ -448,7 +444,7 @@ pbs %>%
   filter(ATC2 == "R03") %>%
   model(ETS(Cost)) %>%
   forecast(h = "3 years") %>%
-  autoplot(pbs, level=c(50,60,70,80,90))
+  autoplot(pbs, level = c(50, 90))
 ```
 
 ## ETS forecasts of PBS data
@@ -458,7 +454,7 @@ pbs %>%
   filter(ATC2 == "H02") %>%
   model(ETS(Cost)) %>%
   forecast(h = "3 years") %>%
-  autoplot(pbs, level=c(50,60,70,80,90))
+  autoplot(pbs, level = c(50, 90))
 ```
 
 ## Forecasting PBS expenditure
@@ -472,27 +468,13 @@ pbs %>%
   * Now implemented in R as `ets()` in forecast package, as `ETS()` function in fable package, and in Tableau and elsewhere.
   * NOT implemented in `FORECAST.ETS` function in MS-Excel.
 
-## Hierarchical forecasting
 
-\hspace*{-1cm}\begin{minipage}{9.6cm}
-\begin{tikzpicture}
-\tikzstyle{every node}=[ellipse,font=\small,draw,fill=red!15]
-\tikzstyle[level font=\small,set style={{every node}+=[fill=blue!15]}]
-\tikzstyle{level 1}=[font=\small,set style={{every node}+=[fill=blue!15]}]
-\tikzstyle{level 2}=[font=\small,set style={{every node}+=[fill=yellow]}]
-\node[label=right:\hspace*{-0.cm}Alimentary tract and metabolism,label=left:\textbf{14 classes}\hspace*{0.3cm}]{A}[edge from parent fork down]
-   child {node[label=right:\hspace*{-0.0cm}Drugs used in diabetes,label=left:\textbf{84 classes}]{A10}
-     child {node[label=right:\hspace*{-0.35cm}Blood glucose lowering drugs]{A10B}
-       child {node[label=right:\hspace*{0.1cm}Biguanides]{A10BA}
-         child {node[label=right:\hspace*{-0.15cm}Metformin]{A10BA02}
- }}}};
- \end{tikzpicture}
-\end{minipage}
+## Forecastability factors
 
-## Hierarchical forecasting
-
-  * Nearly ten years later, Hyndman et al (CSDA, 2011) proposed forecast reconciliation to handle hierarchical time series.
-  * Now widely used in business and industry and implemented in the `hts` and `fable` packages.
+ 1. we have a good understanding of the factors that contribute to it, and can measure them.
+ 2. there is lots of data available;
+ 3. the future is somewhat similar to the past
+ 4. the forecasts cannot affect the thing we are trying to forecast.
 
 # Forecasting peak electricity demand
 
@@ -502,12 +484,165 @@ pbs %>%
 \begin{textblock}{12}(0.2,8.8)\tiny\textcolor{gray}{\texttt{Varistor60, CC BY-SA 4.0, https://commons.wikimedia.org/w/index.php?curid=59368531}}
 \end{textblock}
 
+## Forecasting peak electricity demand
+
+\begin{block}{The phone call (2006)}
+\begin{itemize}
+\item  We want to forecast the peak electricity demand in a half-hour period in twenty years time.
+\item We have fifteen years of half-hourly electricity data, temperature data and some economic and demographic data.
+\item The location is South Australia: home to the most volatile electricity demand in the world.
+\end{itemize}
+\end{block}
+
+\vspace*{0.2cm}\pause
+\begin{center}
+\hspace*{6.7cm}\begin{beamerboxesrounded}[lower=block
+body,width={4.2cm}]{} \textbf{\alert{Sounds impossible?}}
+\end{beamerboxesrounded}
+\end{center}
+
+## Forecasting peak electricity demand
+
+```{r elec1}
+vic_elec %>%
+  autoplot(Demand) +
+  labs(title = "VIC statewide demand", y = "GW")
+```
+
+## Forecasting peak electricity demand
+
+```{r elec2}
+vic_elec %>%
+  filter(Date >= "2013-12-01", Date <= "2014-02-28") %>%
+  autoplot(Demand) +
+  labs(title = "VIC statewide demand: Summer 2013/14", y = "GW")
+```
+
+## Forecasting peak electricity demand
+
+```{r elec2a}
+vic_elec %>%
+  filter(Date >= "2013-12-01", Date <= "2014-02-28") %>%
+  pivot_longer(Demand:Temperature, values_to = "value", names_to = "variable") %>%
+  ggplot(aes(x = Time, y = value)) +
+  geom_line() +
+  facet_grid(variable ~ ., scales = "free_y") +
+  labs(
+    title = "VIC statewide demand: Summer 2013/14",
+    x = "Time [30m]",
+    y = "Degrees Celsius                           GW"
+  )
+```
+
+## Forecasting peak electricity demand
+
+```{r elec3, dev='png', dpi=300}
+p1 <- vic_elec %>%
+  ggplot(aes(x = Temperature, y = Demand)) +
+  geom_point() +
+  coord_cartesian(ylim=c(2800,9400))
+p2 <- vic_elec %>%
+  mutate(
+    dow = lubridate::wday(Date, week_start = 1),
+    Workday = (dow <= 5 & !Holiday)
+  ) %>%
+  ggplot(aes(x = Temperature, y = Demand, col = Workday)) +
+  geom_point(alpha = 0.3) +
+  coord_cartesian(ylim=c(2800,9400))
+aligned_plots <- align_patches(p1, p2)
+aligned_plots[[1]]
+```
+
+## Forecasting peak electricity demand
+
+```{r elec4, dependson="elec3", dev='png', dpi=300}
+aligned_plots[[2]]
+```
+
+## Forecasting peak electricity demand
+
+```{r elec5}
+df <- vic_elec %>%
+  as_tibble() %>%
+  mutate(
+    dow = lubridate::wday(Date, week_start = 1),
+    Workday = (dow <= 5 & !Holiday),
+    state = strftime(Time, format = "%H:%M"),
+  )
+states <- sort(unique(df$state))
+for (i in seq_along(states)) {
+  pdf(paste0(here::here("figure"), "/elec", i, ".pdf"),
+    width = 20 / 2.54, height = 10 / 2.54)
+  p <- df %>%
+    filter(state == states[i]) %>%
+    ggplot(aes(x = Temperature, y = Demand, col = Workday)) +
+    geom_point(alpha = 0.6) +
+    geom_label(aes(x = 10, y = 9000, label = states[i]), color = "black") +
+  coord_cartesian(ylim=c(2800,9400))
+  print(p)
+  crop::dev.off.crop()
+}
+```
+
+\centerline{\animategraphics[width=14cm,loop]{48}{figure/elec}{1}{48}}
+
+## Forecasting peak electricity demand
+
+\alert{Predictors}\vspace*{-0.2cm}
+  \begin{itemize}\itemsep=0cm\parskip=0cm
+    \item calendar effects: time of day, day of week, time of year, holidays, etc.
+    \item prevailing and recent weather conditions
+    \item climate change
+    \item demand response incentives
+    \item changing technology
+    \item economic and demographic changes
+  \end{itemize}\vspace*{0.2cm}
+
+  \begin{block}{}
+    \bfseries We build a nonparametric stochastic model of demand as a function of these predictors.
+  \end{block}
+
+## Forecastability factors
+
+ 1. we have a good understanding of the factors that contribute to it, and can measure them.
+ 2. there is lots of data available;
+ 3. the future is somewhat similar to the past
+ 4. the forecasts cannot affect the thing we are trying to forecast.
 
 # Forecasting COVID19 cases
 
 ## Forecasting COVID19 cases
 
 \placefig{0}{1.35}{height=9.2cm, width=20cm}{covid}
+
+## Australian Health Protection Principal Committee
+
+\begin{block}{}The \textbf{Australian Health Protection Principal Committee} is the key decision-making committee for national health emergencies. It comprises all state and territory Chief Health Officers and is chaired by the Australian Chief Medical Officer.
+\end{block}
+
+\begin{alertblock}{COVID-19 forecasting group}
+\begin{multicols}{3}\small
+\begin{itemize}\tightlist
+\item Peter Dawson
+\item Nick Golding
+\item Rob J Hyndman
+\item Dennis Liu
+\item Michael Lydeamore
+\item James M McCaw
+\item Jodie McVernon
+\item Pablo \rlap{Montero-Manso}
+\item Robert Moss
+\item Mitchell \rlap{O'Hara-Wild}
+\item David J Price
+\item Joshua V Ross
+\item Gerry Ryan
+\item Freya M Shearer
+\item Tobin South
+\item Nicholas Tierney
+\item Ruarai Tobin
+\end{itemize}
+\end{multicols}\vspace*{-0.2cm}
+\end{alertblock}
 
 ## Data sources
 
@@ -516,13 +651,6 @@ pbs %>%
 * Weekly non-household contact surveys
 * Weekly behavioural surveys
 * Daily case numbers from many countries and regions via the Johns Hopkins COVID-19 repository
-
-## Case numbers
-\fontsize{12}{12}\sf
-
-```{r, echo=TRUE}
-localcases %>% filter(state == "VIC", date >= "2020-07-01")
-```
 
 ## Case numbers
 
@@ -544,14 +672,6 @@ localcases %>%
 ```
 
 * Recent case numbers are uncertain and incomplete as date of onset is not known until symptoms show and a test is obtained.
-
-
-## Global daily cases by region from Johns Hopkins
-
-\begin{alertblock}{}https://github.com/CSSEGISandData/COVID-19
-\end{alertblock}
-
-\full{jhu_dashboard}
 
 ## A model ensemble
 \fontsize{14}{16}\sf
@@ -598,7 +718,7 @@ ensemble <- make_ensemble(samples)
 ```{r some_plots, include=FALSE}
 vic_ensemble <- ensemble %>% filter(state == "VIC")
 origins <- sort(unique(vic_ensemble$forecast_origin))
-origins <- origins[c(2,8,11,33,48,88,106)]
+origins <- origins[c(2, 8, 11, 33, 48, 88, 106)]
 for (i in seq_along(origins)) {
   p <- vic_ensemble %>%
     filter(forecast_origin == origins[i], date <= origins[i] + 7 * 4) %>%
@@ -635,14 +755,16 @@ for (i in seq_along(origins)) {
 ```
 
 \only<1>{\full{ensemble1}}
-\only<2>{\full{ensemble2}}
-\only<3>{\full{ensemble3}}
-\only<4>{\full{ensemble4}}
-\only<5>{\full{ensemble5}}
-\only<6>{\full{ensemble6}}
-\only<7>{\full{ensemble7}}
+\only<2>{\full{ensemble4}}
+\only<3>{\full{ensemble6}}
+\only<4>{\full{ensemble7}}
 
-<!-- \centerline{\animategraphics[controls,buttonsize=0.3cm,width=14cm]{5}{figs/ensemble}{1}{107}} -->
+## Forecastability factors
+
+ 1. we have a good understanding of the factors that contribute to it, and can measure them.
+ 2. there is lots of data available;
+ 3. the future is somewhat similar to the past
+ 4. the forecasts cannot affect the thing we are trying to forecast.
 
 # Forecasting post-pandemic tourism 
 
@@ -650,6 +772,16 @@ for (i in seq_along(origins)) {
 
 \placefig{0}{1.35}{height=10.2cm, width=20cm}{12apostles}
 
+## Forecasting post-pandemic tourism 
+
+\placefig{0.3}{1.4}{height=8.2cm, width=15cm}{arrivals}
+
+## Forecastability factors
+
+ 1. we have a good understanding of the factors that contribute to it, and can measure them.
+ 2. there is lots of data available;
+ 3. the future is somewhat similar to the past
+ 4. the forecasts cannot affect the thing we are trying to forecast.
 
 # Assessing forecast uncertainty
 
@@ -657,14 +789,15 @@ for (i in seq_along(origins)) {
 
 ```{r qs, include=FALSE}
 # Run to generate the graphs
-qp <- function(p,y) {
-  if(length(p) > 1 & length(y) > 1)
+qp <- function(p, y) {
+  if (length(p) > 1 & length(y) > 1) {
     stop("Either p or y should be a scalar")
-  fp <- qgamma(p,2)
-  2*(1-p)*abs(y-fp)*(y < fp) + 2*p*abs(y-fp)*(y >= fp)
+  }
+  fp <- qgamma(p, 2)
+  2 * (1 - p) * abs(y - fp) * (y < fp) + 2 * p * abs(y - fp) * (y >= fp)
 }
 gamma <- tibble(
-  y = seq(0,10,l=101),
+  y = seq(0, 10, l = 101),
   f = dgamma(y, 2)
 )
 actual <- 3
@@ -675,17 +808,18 @@ actual <- 3
 prob <- 0.5
 qactual <- qgamma(prob, 2)
 gamma %>%
-  ggplot(aes(x=y, y=f)) + 
-  geom_line() + 
-  geom_point(aes(x=actual,y=y), data=tibble(actual=actual,y=0)) +
-  geom_label(aes(x=actual,y=0.02,label="Actual")) +
-  labs(y="Forecast probability density", x=latex2exp::TeX("Quantile $q_{p}$")) +
-  geom_line(aes(x=y, y=f), col='blue',linetype=2,
-    data=tibble(y=rep(qactual,2), f=c(dgamma(qactual,2),0))
+  ggplot(aes(x = y, y = f)) +
+  geom_line() +
+  geom_point(aes(x = actual, y = y), data = tibble(actual = actual, y = 0)) +
+  geom_label(aes(x = actual, y = 0.02, label = "Actual")) +
+  labs(y = "Forecast probability density", x = latex2exp::TeX("Quantile $q_{p}$")) +
+  geom_line(aes(x = y, y = f),
+    col = "blue", linetype = 2,
+    data = tibble(y = rep(qactual, 2), f = c(dgamma(qactual, 2), 0))
   ) +
-  geom_label(aes(x=qactual,y=0.02, label="Median"), col='blue') +
-  geom_label(aes(x=qactual,y=-0.01, label="0.5 quantile"), col='blue') +
-  coord_cartesian(ylim=c(-0,0.375), xlim=c(0,10), expand=FALSE, clip='off')
+  geom_label(aes(x = qactual, y = 0.02, label = "Median"), col = "blue") +
+  geom_label(aes(x = qactual, y = -0.01, label = "0.5 quantile"), col = "blue") +
+  coord_cartesian(ylim = c(-0, 0.375), xlim = c(0, 10), expand = FALSE, clip = "off")
 ```
 
 
@@ -696,16 +830,17 @@ gamma %>%
 prob <- 0.9
 qactual <- qgamma(prob, 2)
 gamma %>%
-  ggplot(aes(x=y, y=f)) + 
-  geom_line() + 
-  geom_point(aes(x=actual,y=y), data=tibble(actual=actual,y=0)) +
-  geom_label(aes(x=actual,y=0.02,label="Actual")) +
-  labs(y="Forecast probability density", x=latex2exp::TeX("Quantile $q_{p}$")) +
-  geom_line(aes(x=y, y=f), col='blue',linetype=2,
-    data=tibble(y=rep(qactual,2), f=c(dgamma(qactual,2),0))
+  ggplot(aes(x = y, y = f)) +
+  geom_line() +
+  geom_point(aes(x = actual, y = y), data = tibble(actual = actual, y = 0)) +
+  geom_label(aes(x = actual, y = 0.02, label = "Actual")) +
+  labs(y = "Forecast probability density", x = latex2exp::TeX("Quantile $q_{p}$")) +
+  geom_line(aes(x = y, y = f),
+    col = "blue", linetype = 2,
+    data = tibble(y = rep(qactual, 2), f = c(dgamma(qactual, 2), 0))
   ) +
-  geom_label(aes(x=qactual,y=-0.01, label=paste(sprintf("%.2f",prob), "quantile")), col='blue') +
-  coord_cartesian(ylim=c(-0,0.375), xlim=c(0,10), expand=FALSE, clip='off')
+  geom_label(aes(x = qactual, y = -0.01, label = paste(sprintf("%.2f", prob), "quantile")), col = "blue") +
+  coord_cartesian(ylim = c(-0, 0.375), xlim = c(0, 10), expand = FALSE, clip = "off")
 ```
 
 ## Evaluating probabilistic forecasts
@@ -715,38 +850,43 @@ gamma %>%
 prob <- c(0.1, 0.3, 0.5, 0.7, 0.9)
 qactual <- qgamma(prob, 2)
 qpactual <- qp(prob, actual)
-for(i in seq_along(prob)) {
+for (i in seq_along(prob)) {
   p1 <- gamma %>%
-    ggplot(aes(x=y, y=f)) + 
-    geom_line() + 
-    geom_point(aes(x=actual,y=y), data=tibble(actual=actual,y=0)) +
-    labs(y="Forecast probability density", x=latex2exp::TeX("Quantile $q_{p}$")) +
-    geom_line(aes(x=y, y=f), col='blue',linetype=2,
-      data=tibble(y=rep(qactual[i],2), f=c(dgamma(qactual[i],2),0))
+    ggplot(aes(x = y, y = f)) +
+    geom_line() +
+    geom_point(aes(x = actual, y = y), data = tibble(actual = actual, y = 0)) +
+    labs(y = "Forecast probability density", x = latex2exp::TeX("Quantile $q_{p}$")) +
+    geom_line(aes(x = y, y = f),
+      col = "blue", linetype = 2,
+      data = tibble(y = rep(qactual[i], 2), f = c(dgamma(qactual[i], 2), 0))
     ) +
-    geom_label(aes(x=actual,y=0.03,label="Actual")) +
-    geom_label(aes(x=qactual[i],y=-0.02, label=paste(sprintf("%.2f",prob[i]), "quantile")), col='blue') +
-    coord_cartesian(ylim=c(-0,0.375), xlim=c(0,10), expand=FALSE, clip='off')
+    geom_label(aes(x = actual, y = 0.03, label = "Actual")) +
+    geom_label(aes(x = qactual[i], y = -0.02, label = paste(sprintf("%.2f", prob[i]), "quantile")), col = "blue") +
+    coord_cartesian(ylim = c(-0, 0.375), xlim = c(0, 10), expand = FALSE, clip = "off")
   p2 <- tibble(
-        y = seq(0,10,l=101),
-        Q = qp(prob[i], y)
-      ) %>%
-      ggplot(aes(x=y, y=Q)) +
-      geom_line() +
-      labs(x=latex2exp::TeX("Quantile $q_{p}$"),
-           y = latex2exp::TeX("Quantile score $S_{p}$")
-      ) +
-      geom_line(aes(x=y, y=Q), col='red',linetype=2,
-        data=tibble(y=c(actual,actual), Q=c(14.5,qpactual[i]))
-      ) +
-      geom_line(aes(x=y, y=Q), col='red',linetype=2,
-                data=tibble(y=c(actual,0), Q=rep(qpactual[i],2))
-      ) +
-      geom_line(aes(x=y, y=f), col='blue',linetype=2,
-        data=tibble(y=rep(qactual[i],2), f=c(0,13.5))
-      ) +
-      coord_cartesian(ylim=c(0,11.6), xlim=c(0,10), expand=FALSE, clip='off')
-  pdf(paste0("figure/pdfqs",i,".pdf"), width=15/1.5, height=8/1.5) 
+    y = seq(0, 10, l = 101),
+    Q = qp(prob[i], y)
+  ) %>%
+    ggplot(aes(x = y, y = Q)) +
+    geom_line() +
+    labs(
+      x = latex2exp::TeX("Quantile $q_{p}$"),
+      y = latex2exp::TeX("Quantile score $S_{p}$")
+    ) +
+    geom_line(aes(x = y, y = Q),
+      col = "red", linetype = 2,
+      data = tibble(y = c(actual, actual), Q = c(14.5, qpactual[i]))
+    ) +
+    geom_line(aes(x = y, y = Q),
+      col = "red", linetype = 2,
+      data = tibble(y = c(actual, 0), Q = rep(qpactual[i], 2))
+    ) +
+    geom_line(aes(x = y, y = f),
+      col = "blue", linetype = 2,
+      data = tibble(y = rep(qactual[i], 2), f = c(0, 13.5))
+    ) +
+    coord_cartesian(ylim = c(0, 11.6), xlim = c(0, 10), expand = FALSE, clip = "off")
+  pdf(paste0("figure/pdfqs", i, ".pdf"), width = 15 / 1.5, height = 8 / 1.5)
   print(p1 / p2)
   crop::dev.off.crop()
 }
@@ -761,61 +901,69 @@ for(i in seq_along(prob)) {
 ## Evaluating probabilistic forecasts
 
 ```{r pdfqs2, include=FALSE, dependson='qs'}
-qs <- seq(0,10,l=200)
+qs <- seq(0, 10, l = 200)
 prob <- pgamma(qs, 2)
 prob <- c(prob[prob <= 0.999], 0.9999)
-for(i in seq_along(prob)) {
+for (i in seq_along(prob)) {
   qactual <- qgamma(prob[i], 2)
   qpactual <- qp(prob[i], actual)
   p1 <- gamma %>%
-    ggplot(aes(x=y, y=f)) + 
-    geom_line() + 
-    geom_point(aes(x=actual,y=y), data=tibble(actual=actual,y=0)) +
-    geom_label(aes(x=actual,y=0.02,label="Actual")) +
-    labs(y="Forecasting probability density", x=latex2exp::TeX("Quantile $q_{p}$")) +
-    geom_line(aes(x=y, y=f), col='blue',linetype=2,
-      data=tibble(y=rep(qactual,2), f=c(dgamma(qactual,2),-0.1))
-    ) +
-    coord_cartesian(ylim=c(-0,0.375), xlim=c(0,10), expand=FALSE, clip='off')
-  p2 <- tibble(
-      y = seq(0,10,l=101),
-      Q = qp(prob[i], y)
-    ) %>%
-    ggplot(aes(x=y, y=Q)) +
+    ggplot(aes(x = y, y = f)) +
     geom_line() +
-    labs(x=latex2exp::TeX("Quantile $q_{p}$"),
-         y = latex2exp::TeX("Quantile score $S_{p}$")
+    geom_point(aes(x = actual, y = y), data = tibble(actual = actual, y = 0)) +
+    geom_label(aes(x = actual, y = 0.02, label = "Actual")) +
+    labs(y = "Forecasting probability density", x = latex2exp::TeX("Quantile $q_{p}$")) +
+    geom_line(aes(x = y, y = f),
+      col = "blue", linetype = 2,
+      data = tibble(y = rep(qactual, 2), f = c(dgamma(qactual, 2), -0.1))
     ) +
-    geom_line(aes(x=y, y=Q), col='red',linetype=2,
-      data=tibble(y=rep(actual,2), Q=c(14.5,qpactual))
+    coord_cartesian(ylim = c(-0, 0.375), xlim = c(0, 10), expand = FALSE, clip = "off")
+  p2 <- tibble(
+    y = seq(0, 10, l = 101),
+    Q = qp(prob[i], y)
+  ) %>%
+    ggplot(aes(x = y, y = Q)) +
+    geom_line() +
+    labs(
+      x = latex2exp::TeX("Quantile $q_{p}$"),
+      y = latex2exp::TeX("Quantile score $S_{p}$")
     ) +
-    geom_line(aes(x=y, y=Q), col='red',linetype=2,
-              data=tibble(y=c(actual,-1), Q=rep(qpactual,2))
+    geom_line(aes(x = y, y = Q),
+      col = "red", linetype = 2,
+      data = tibble(y = rep(actual, 2), Q = c(14.5, qpactual))
     ) +
-    geom_line(aes(x=y, y=f), col='blue',linetype=2,
-      data=tibble(y=rep(qactual,2), f=c(0,12))
+    geom_line(aes(x = y, y = Q),
+      col = "red", linetype = 2,
+      data = tibble(y = c(actual, -1), Q = rep(qpactual, 2))
     ) +
-    geom_label(aes(x=qactual,y=11.6, label=paste(sprintf("%.3f",prob[i]), "quantile")), col='blue') +
-    coord_cartesian(ylim=c(0,11.6), xlim=c(0,10), expand=FALSE, clip='off')
-  
+    geom_line(aes(x = y, y = f),
+      col = "blue", linetype = 2,
+      data = tibble(y = rep(qactual, 2), f = c(0, 12))
+    ) +
+    geom_label(aes(x = qactual, y = 11.6, label = paste(sprintf("%.3f", prob[i]), "quantile")), col = "blue") +
+    coord_cartesian(ylim = c(0, 11.6), xlim = c(0, 10), expand = FALSE, clip = "off")
+
   p3data <- tibble(
-        p = prob,
-        Q = qp(prob, actual)
-      ) %>%
-      filter(p <= prob[i])
-  p3 <- p3data  %>%
-      ggplot(aes(x=p, y=Q)) +
-      geom_line(col='red') +
-      geom_polygon(fill='#ffbbbb', 
-            data = bind_rows(p3data, tibble(p=prob[i], Q=0))) +
-      geom_line(data=tibble(p=c(prob[i],1),Q=rep(qpactual,2)), col='red', linetype=2) +
-      #geom_point(data=tibble(p=prob[i],Q=qpactual), col='red') +
-      labs(x=latex2exp::TeX("Probability p"),
-         y = latex2exp::TeX("Quantile score $S_{p}$")
-      ) +
-      coord_cartesian(ylim=c(0,11.6), xlim=c(0,1), expand=FALSE, clip='off')
-  
-  pdf(file=paste0("figure/qs",i,".pdf"), width=15/1.5, height=8/1.5)
+    p = prob,
+    Q = qp(prob, actual)
+  ) %>%
+    filter(p <= prob[i])
+  p3 <- p3data %>%
+    ggplot(aes(x = p, y = Q)) +
+    geom_line(col = "red") +
+    geom_polygon(
+      fill = "#ffbbbb",
+      data = bind_rows(p3data, tibble(p = prob[i], Q = 0))
+    ) +
+    geom_line(data = tibble(p = c(prob[i], 1), Q = rep(qpactual, 2)), col = "red", linetype = 2) +
+    # geom_point(data=tibble(p=prob[i],Q=qpactual), col='red') +
+    labs(
+      x = latex2exp::TeX("Probability p"),
+      y = latex2exp::TeX("Quantile score $S_{p}$")
+    ) +
+    coord_cartesian(ylim = c(0, 11.6), xlim = c(0, 1), expand = FALSE, clip = "off")
+
+  pdf(file = paste0("figure/qs", i, ".pdf"), width = 15 / 1.5, height = 8 / 1.5)
   print((plot_spacer() | p1) / (p3 | p2))
   crop::dev.off.crop()
 }
@@ -853,7 +1001,7 @@ $$
 \end{block}}
 \end{textblock}
 \begin{textblock}{15}(0.2,5.8)
-\uncover<4->{
+\uncover<3->{
 \begin{itemize}\itemsep=0cm\parskip=0cm
 \item Low $S_{p,t}$ is good
 \item Multiplier of 2 often omitted, but useful for interpretation
@@ -862,36 +1010,7 @@ $$
 \end{itemize}}
 \end{textblock}
 
-<!-- \begin{textblock}{6}(10,2)
-\only<3->{\animategraphics[loop,autoplay]{10}{uncertain_futures_files/figure-beamer/pinball-}{1}{100}}
-\end{textblock}
- -->
 
-```{r pinball, eval=FALSE, echo=FALSE, fig.show='animate', interval=1/10, message=FALSE, fig.height=3, fig.width=5, cache=FALSE}
-# Turn eval=TRUE to recompute these graphs. They are loaded in the above animategraphics call.
-library(gganimate)
-prob <- seq(0.05, 0.95, by = 0.05)
-df <- expand.grid(
-  error = c(-10, 0, 10),
-  p = c(prob, rev(head(prob, -1)[-1]))
-) %>%
-  mutate(
-    state = rep(seq(length(p) / 3), rep(3, length(p) / 3)),
-    qpt = 2 * p * error * (error > 0) - 2 * (1 - p) * error * (error < 0)
-  )
-labels <- df %>%
-  select(p, state) %>%
-  distinct() %>%
-  mutate(label = paste0("p = ", sprintf("%.2f", p)))
-df %>% ggplot(aes(x = error, y = qpt)) +
-  geom_line(aes(group = state), colour = "red") +
-  labs(
-    x = latex2exp::TeX("Error: $y_t - q_{p,t}$"),
-    y = latex2exp::TeX("S_{p,t}")
-  ) +
-  geom_label(data = labels, aes(x = 0, y = 17, label = label)) +
-  transition_states(state)
-```
 
 <!--
 ## CRPS: Continuous Ranked Probability Score
@@ -961,3 +1080,9 @@ For weekly forecasts created from 17 September 2020 to 15 June 2021
 \href{https://github.com/robjhyndman}{\faicon{github}  @robjhyndman}
 
 \href{mailto:rob.hyndman@monash.edu}{\faicon{envelope}  rob.hyndman@monash.edu}
+
+\vspace*{0.8cm}\fontsize{19}{19}\sf
+
+###
+Slides: \texttt{\href{https://robjhyndman.com/uncertain_futures}{robjhyndman.com/uncertain\_futures}}
+
