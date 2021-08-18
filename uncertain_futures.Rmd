@@ -240,7 +240,12 @@ p7 <- p1 +
   geom_line(aes(y = .sim, group = replicate, colour = replicate), alpha = 0.5, col = "gray", data = sim) +
   guides(colour = "none")
 p8 <- p7 + autolayer(fc, level = c(50, 90))
-p9 <- p8 + coord_cartesian(xlim=as.Date(c("2013-01-01","2021-08-01")))
+p9 <- p8 + coord_cartesian(xlim=as.Date(c("2013-01-01","2021-08-01"))) +
+  scale_x_date(
+    breaks = seq(as.Date("2000-01-01"), by = "2 years", l = 11),
+    labels = paste("Jan", seq(2000, 2020, by = 2)),
+    minor_breaks = seq(as.Date("2001-01-01"), by = "1 year", l = 25)
+  ) 
 aligned_plots <- align_patches(p1, p2, p3, p4, p5, p6, p7, p8,p9)
 ```
 
@@ -376,45 +381,30 @@ aligned_plots[[9]] +
 \end{itemize}
 \end{block}
 
-## ATC drug classification
-
-\hspace*{-1cm}\begin{minipage}{9.6cm}
-\begin{tikzpicture}
-\tikzstyle{every node}=[ellipse,font=\small,draw,fill=red!15]
-\tikzstyle[level font=\small,set style={{every node}+=[fill=blue!15]}]
-\tikzstyle{level 1}=[font=\small,set style={{every node}+=[fill=blue!15]}]
-\tikzstyle{level 2}=[font=\small,set style={{every node}+=[fill=yellow]}]
-\node[label=right:\hspace*{-0.cm}Alimentary tract and metabolism,label=left:\textbf{14 classes}\hspace*{0.3cm}]{A}[edge from parent fork down]
-   child {node[label=right:\hspace*{-0.0cm}Drugs used in diabetes,label=left:\textbf{84 classes}]{A10}
-     child {node[label=right:\hspace*{-0.35cm}Blood glucose lowering drugs]{A10B}
-       child {node[label=right:\hspace*{0.1cm}Biguanides]{A10BA}
-         child {node[label=right:\hspace*{-0.15cm}Metformin]{A10BA02}
- }}}};
- \end{tikzpicture}
-\end{minipage}
-
 ## ETS forecasts of PBS data
 
 ```{r pbs1}
 pbs <- PBS %>%
   group_by(ATC2) %>%
-  summarise(Cost = sum(Cost)) %>%
+  summarise(Cost = sum(Cost)/1e6) %>%
   ungroup()
 pbs %>%
-  filter(ATC2 == "A10") %>%
+  filter(ATC2 == "A05") %>%
   model(ETS(Cost)) %>%
   forecast(h = "3 years") %>%
-  autoplot(pbs, level = c(50, 90))
+  autoplot(pbs, level = c(50, 90)) + 
+  labs(y = "Cost ($million)", title="Monthly sales: A05 products")
 ```
 
 ## ETS forecasts of PBS data
 
 ```{r pbs2}
 pbs %>%
-  filter(ATC2 == "A05") %>%
+  filter(ATC2 == "A10") %>%
   model(ETS(Cost)) %>%
   forecast(h = "3 years") %>%
-  autoplot(pbs, level = c(50, 90))
+  autoplot(pbs, level = c(50, 90)) + 
+  labs(y = "Cost ($million)", title="Monthly sales: A10 products")
 ```
 
 ## ETS forecasts of PBS data
@@ -424,7 +414,8 @@ pbs %>%
   filter(ATC2 == "D01") %>%
   model(ETS(Cost)) %>%
   forecast(h = "3 years") %>%
-  autoplot(pbs, level = c(50, 90))
+  autoplot(pbs, level = c(50, 90)) + 
+  labs(y = "Cost ($million)", title="Monthly sales: D01 products")
 ```
 
 ## ETS forecasts of PBS data
@@ -434,27 +425,8 @@ pbs %>%
   filter(ATC2 == "S01") %>%
   model(ETS(Cost ~ trend("N"))) %>%
   forecast(h = "3 years") %>%
-  autoplot(pbs, level = c(50, 90))
-```
-
-## ETS forecasts of PBS data
-
-```{r pbs5}
-pbs %>%
-  filter(ATC2 == "R03") %>%
-  model(ETS(Cost)) %>%
-  forecast(h = "3 years") %>%
-  autoplot(pbs, level = c(50, 90))
-```
-
-## ETS forecasts of PBS data
-
-```{r pbs6}
-pbs %>%
-  filter(ATC2 == "H02") %>%
-  model(ETS(Cost)) %>%
-  forecast(h = "3 years") %>%
-  autoplot(pbs, level = c(50, 90))
+  autoplot(pbs, level = c(50, 90)) + 
+  labs(y = "Cost ($million)", title="Monthly sales: S01 products")
 ```
 
 ## Forecasting PBS expenditure
@@ -467,7 +439,6 @@ pbs %>%
   * Theory and algorithm published as Hyndman et al (IJF, 2002).
   * Now implemented in R as `ets()` in forecast package, as `ETS()` function in fable package, and in Tableau and elsewhere.
   * NOT implemented in `FORECAST.ETS` function in MS-Excel.
-
 
 ## Forecastability factors
 
@@ -536,28 +507,32 @@ vic_elec %>%
 
 ## Forecasting peak electricity demand
 
-```{r elec3, dev='png', dpi=300}
+```{r elec3, include=FALSE}
 p1 <- vic_elec %>%
   ggplot(aes(x = Temperature, y = Demand)) +
   geom_point() +
-  coord_cartesian(ylim=c(2800,9400))
+  labs(y = "Demand (GW)", x = "Temperature (degrees C)")
 p2 <- vic_elec %>%
   mutate(
     dow = lubridate::wday(Date, week_start = 1),
-    Workday = (dow <= 5 & !Holiday)
+    Workday = if_else(dow <= 5 & !Holiday, "Workday", "Non-workday")
   ) %>%
   ggplot(aes(x = Temperature, y = Demand, col = Workday)) +
   geom_point(alpha = 0.3) +
-  coord_cartesian(ylim=c(2800,9400))
+  labs(y = "Demand (GW)", x = "Temperature (degrees C)")
 aligned_plots <- align_patches(p1, p2)
-aligned_plots[[1]]
+png(paste0(here::here("figure"), "/elecscatter1.png"),
+    width = 20, height = 10, units="cm", res=300, type="cairo-png")
+print(aligned_plots[[1]])
+crop::dev.off.crop()
+png(paste0(here::here("figure"), "/elecscatter2.png"),
+    width = 20, height = 10, units="cm", res=300, type="cairo-png")
+print(aligned_plots[[2]])
+crop::dev.off.crop()
 ```
 
-## Forecasting peak electricity demand
-
-```{r elec4, dependson="elec3", dev='png', dpi=300}
-aligned_plots[[2]]
-```
+\only<1>{\centerline{\includegraphics[width=14cm, height=20cm]{figure/elecscatter1.png}}}
+\only<2>{\centerline{\includegraphics[width=14cm, height=20cm]{figure/elecscatter2.png}}}
 
 ## Forecasting peak electricity demand
 
@@ -566,7 +541,7 @@ df <- vic_elec %>%
   as_tibble() %>%
   mutate(
     dow = lubridate::wday(Date, week_start = 1),
-    Workday = (dow <= 5 & !Holiday),
+    Workday = if_else(dow <= 5 & !Holiday, "Workday", "Non-workday"),
     state = strftime(Time, format = "%H:%M"),
   )
 states <- sort(unique(df$state))
@@ -578,7 +553,8 @@ for (i in seq_along(states)) {
     ggplot(aes(x = Temperature, y = Demand, col = Workday)) +
     geom_point(alpha = 0.6) +
     geom_label(aes(x = 10, y = 9000, label = states[i]), color = "black") +
-  coord_cartesian(ylim=c(2800,9400))
+    coord_cartesian(ylim=range(df$Demand), xlim=range(df$Temperature)) + 
+    labs(y = "Demand (GW)", x = "Temperature (degrees C)")
   print(p)
   crop::dev.off.crop()
 }
@@ -601,6 +577,23 @@ for (i in seq_along(states)) {
   \begin{block}{}
     \bfseries We build a nonparametric stochastic model of demand as a function of these predictors.
   \end{block}
+
+## Forecastability factors
+
+ 1. we have a good understanding of the factors that contribute to it, and can measure them.
+ 2. there is lots of data available;
+ 3. the future is somewhat similar to the past
+ 4. the forecasts cannot affect the thing we are trying to forecast.
+
+# Forecasting post-pandemic tourism 
+
+## Forecasting post-pandemic tourism 
+
+\placefig{0}{1.35}{height=10.2cm, width=20cm}{12apostles}
+
+## Forecasting post-pandemic tourism 
+
+\placefig{0.3}{1.4}{height=7.5cm, width=15cm}{arrivals}
 
 ## Forecastability factors
 
@@ -667,7 +660,11 @@ state_colours <- c(
 )
 localcases %>%
   autoplot(n) +
-  labs(x = "Date of symptom onset") +
+  labs(x = "Date of symptom onset", y = "Number of daily cases") +
+  scale_x_date(breaks = seq(as.Date("2020-01-01"), by="1 month", length=24),
+               minor_breaks = NULL,
+               labels = c("J\n 2020","F","M","A","M","J","J","A","S","O","N","D",
+                          "J\n 2021","F","M","A","M","J","J","A","S","O","N","D")) +
   scale_color_manual(values = state_colours)
 ```
 
@@ -745,7 +742,7 @@ for (i in seq_along(origins)) {
       )
     ) +
     theme(legend.position = "none") +
-    xlab("Date of symptom onset") + ylab("Number of cases")
+    xlab("Date of symptom onset") + ylab("Number of daily cases")
   pdf(paste0(here::here("figure"), "/ensemble", i, ".pdf"),
     width = 20 / 2.54, height = 10 / 2.54
   )
@@ -758,23 +755,6 @@ for (i in seq_along(origins)) {
 \only<2>{\full{ensemble4}}
 \only<3>{\full{ensemble6}}
 \only<4>{\full{ensemble7}}
-
-## Forecastability factors
-
- 1. we have a good understanding of the factors that contribute to it, and can measure them.
- 2. there is lots of data available;
- 3. the future is somewhat similar to the past
- 4. the forecasts cannot affect the thing we are trying to forecast.
-
-# Forecasting post-pandemic tourism 
-
-## Forecasting post-pandemic tourism 
-
-\placefig{0}{1.35}{height=10.2cm, width=20cm}{12apostles}
-
-## Forecasting post-pandemic tourism 
-
-\placefig{0.3}{1.4}{height=8.2cm, width=15cm}{arrivals}
 
 ## Forecastability factors
 
@@ -982,56 +962,6 @@ for (i in seq_along(prob)) {
 \only<2>{\begin{textblock}{4}(2,7)\fontsize{11}{11}\sf
 \textcolor{red}{Area = CRPS}
 \end{textblock}}
-
-## Evaluating probabilistic forecasts
-
-\begin{textblock}{9.5}(3.2,1.2)
-\begin{alertblock}{}\vspace*{-0.2cm}
-\begin{align*}
-q_{p,t} &= \text{quantile forecast with prob. $p$ at time $t$.}\\
-y_{t} &= \text{observation at time $t$}
-\end{align*}
-\end{alertblock}\vspace*{-0.3cm}
-\uncover<2->{\begin{block}{Quantile score}\vspace*{-0.1cm}
-$$
-  S_{p,t} = \begin{cases}
-  2(1 - p) \big|y_t - q_{p,t}\big|, & \text{if $y_{t} < q_{p,t}$}\\
-  2p \big|y_{t} - q_{p,t}\big|, & \text{if $y_{t} \ge q_{p,t}$} \end{cases}
-$$
-\end{block}}
-\end{textblock}
-\begin{textblock}{15}(0.2,5.8)
-\uncover<3->{
-\begin{itemize}\itemsep=0cm\parskip=0cm
-\item Low $S_{p,t}$ is good
-\item Multiplier of 2 often omitted, but useful for interpretation
-\item $S_{p,t}$ like absolute error (weighted to account for likely exceedance)
-\item Average $S_{p,t}$ over $p$ = CRPS (Continuous Ranked Probability Score)
-\end{itemize}}
-\end{textblock}
-
-
-
-<!--
-## CRPS: Continuous Ranked Probability Score
-\vspace*{-0.8cm}\fontsize{13}{14}\sf\color{black}
-\begin{align*}
-y_{t} &= \text{observation at time $t$}\\
-F_{t}(u) &= \text{Pr}(Y_{t} \le u) = \text{forecast distribution}\\
-q_{p,t} &= F^{-1}_t(p) = \text{quantile forecast with prob. $p$}\\
-  S_{p,t} &= \begin{cases}
-  2(1 - p) \big|y_t - q_{p,t}\big|, & \text{if $y_{t} < q_{p,t}$}\\
-  2p \big|y_{t} - q_{p,t}\big|, & \text{if $y_{t} \ge q_{p,t}$} \end{cases} \\
-Y_t \text{ and } Y_t^* &\sim \text{iid with distribution $F_t$.}
-\end{align*}
-
-###
-\begin{align*}
- \text{CRPS}_t
-   & = \int_0^1 S_{p,t}\, dp \\
-   & = \int_{-\infty}^\infty \left[F_t(u) - 1_{y_t \le u}\right]^2 du \\
-   & = \textstyle\text{E}|Y_t-y_t| - \frac{1}{2}\text{E}|Y_t-Y_t^*|
-\end{align*} -->
 
 ## CRPS: Continuous Ranked Probability Score
 
