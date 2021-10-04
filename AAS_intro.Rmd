@@ -1,0 +1,361 @@
+---
+title: "Uncertain futures"
+author: "Rob J Hyndman"
+fontsize: 14pt
+classoption: aspectratio=169
+toc: false
+output:
+  binb::monash:
+    fig_height: 3.5
+    fig_width: 7.5
+    colortheme: monashwhite
+    keep_tex: yes
+    includes:
+      in_header: aas_header.tex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  cache = TRUE,
+  dev.args = list(pointsize = 11)
+)
+options(digits = 3, width = 88)
+library(tidyverse)
+library(fpp3)
+library(distributional)
+library(patchwork)
+source("functions.R")
+```
+
+```{r cover, include=FALSE}
+# Generate plot for title page
+pdf(file = "figure/cover.pdf", width = 5, height = 2.5)
+austa <- readr::read_csv("http://OTexts.com/fpp3/extrafiles/austa.csv") %>%
+  as_tsibble(index = Year)
+fit <- austa %>% model(ETS(Visitors))
+sim <- fit %>%
+  generate(h = 10, times = 20) %>%
+  mutate(
+    replicate = factor(.rep, levels = 1:20, labels = paste("Future", 1:20))
+  )
+ggplot(austa, aes(x = Year)) +
+  geom_line(aes(y = Visitors, colour = "Data")) +
+  geom_line(aes(y = .sim, colour = replicate), data = sim) +
+  scale_colour_manual(
+    values = c(
+      "#000000", "#D55E00", "#0072B2", "#009E73", "#CC79A7", "#E69F00", "#56B4E9", "#F0E442",
+      sample(rainbow(13))
+    ),
+    breaks = c("Data", paste("Future", 1:20)),
+    name = " "
+  ) +
+  guides(color = "none") +
+  theme_minimal() +
+  scale_y_discrete(breaks = "none") +
+  scale_x_discrete(breaks = "none") +
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+crop::dev.off.crop()
+```
+
+```{r get_local, eval=FALSE, include=FALSE}
+localcases <- readr::read_csv("~/git/covid19ensemble/inputs/local_cases_input.csv") %>%
+  rename(
+    n = count,
+    date = date_onset
+  ) %>%
+  # Adjust count to include cases yet to be detected
+  mutate(n = n / detection_probability) %>%
+  # Remove last days with prob of detection < 0.5
+  filter(detection_probability > 0.5) %>%
+  as_tsibble(index = date, key = state) %>%
+  select(date, state, n) %>%
+  filter(state != "AUS")
+saveRDS(localcases, "localcases.rds")
+```
+
+```{r read_local, echo=FALSE}
+localcases <- readRDS("localcases.rds")
+```
+
+## What can we forecast?
+
+\only<1>{\fullheight{AusBOM}}
+\only<2>{\placefig{0}{1.35}{height=10.8cm, width=20cm}{nasdaq-stock-market}}
+\only<3>{\placefig{0}{1.35}{height=11.2cm, width=20cm}{pills}}
+\only<4>{\placefig{0}{1.35}{height=9.2cm, width=20cm}{elecwires}
+\begin{textblock}{12}(0.2,8.8)\tiny\textcolor{gray}{\texttt{Varistor60, CC BY-SA 4.0, https://commons.wikimedia.org/w/index.php?curid=59368531}}
+\end{textblock}}
+\only<5>{\placefig{0}{1.35}{height=10.2cm, width=20cm}{12apostles}}
+\only<6>{\placefig{0}{1.35}{height=9.2cm, width=20cm}{covid}}
+
+```{r austa}
+# Grab ABS data
+austa <- readxl::read_excel("340101.xls", sheet="Data1", skip=9) %>%
+  rename(date = `Series ID`, value = A85375847A) %>%
+  select(date, value) %>%
+  transmute(
+    Month = yearmonth(date),
+    Visitors = value / 1e3
+  ) %>%
+  bind_rows(tibble(
+    Month = yearmonth(seq(as.Date("2021-06-01"), by = "1 month", length = 7)),
+    Visitors = NA_real_
+  )) %>%
+  as_tsibble(index = Month) %>%
+  filter(Month >= yearmonth("2000 Jan"))
+# Fit ETS model
+fit <- austa %>%
+  filter(Month < yearmonth("2018 Jan")) %>%
+  model(ETS(Visitors))
+# Product forecasts
+fc <- forecast(fit, h = 48) %>%
+  mutate(Month = as.Date(Month))
+# Simulate 100 future sample paths
+set.seed(1967)
+sim <- fit %>%
+  generate(h = 48, times = 100) %>%
+  mutate(
+    replicate = factor(.rep, levels = 1:100, labels = paste("Future", 1:100)),
+    .rep = as.numeric(.rep)
+  ) %>%
+  as_tibble() %>%
+  mutate(Month = as.Date(Month))
+# Nice colors
+cols <- scale_colour_manual(
+  values = c("#D55E00", "#0072B2", "#009E73", "#CC79A7", "#E69F00", "#56B4E9", "#F0E442", sample(rainbow(93))),
+  breaks = paste("Future", 1:100),
+  name = " "
+)
+# Now build up some plots with alignment
+p1 <- austa %>%
+  mutate(Visitors = if_else(Month >= yearmonth("2018 Jan"), NA_real_, Visitors)) %>%
+  as_tibble() %>%
+  mutate(Month = as.Date(Month)) %>%
+  ggplot(aes(x = Month, y = Visitors)) +
+  geom_line() +
+  labs(
+    x = "Month",
+    y = "Thousands of visitors",
+    title = "Total short-term visitors to Australia"
+  ) +
+  scale_x_date(
+    breaks = seq(as.Date("2000-01-01"), by = "5 years", l = 5),
+    labels = paste("Jan", seq(2000, 2020, by = 5)),
+    minor_breaks = seq(as.Date("2001-01-01"), by = "1 year", l = 25)
+  ) +
+  ylim(min(austa$Visitors, sim$.sim, na.rm = TRUE), max(austa$Visitors, sim$.sim, na.rm = TRUE))
+p2 <- p1 + cols +
+  geom_line(aes(y = .sim, group = replicate, colour = replicate),
+    data = sim %>% filter(.rep <= 1)
+  )
+p3 <- p1 + cols +
+  geom_line(aes(y = .sim, group = replicate, colour = replicate),
+    data = sim %>% filter(.rep <= 2)
+  )
+p4 <- p1 + cols +
+  geom_line(aes(y = .sim, group = replicate, colour = replicate),
+    data = sim %>% filter(.rep <= 3)
+  )
+p5 <- p1 + cols +
+  geom_line(aes(y = .sim, group = replicate, colour = replicate),
+    data = sim %>% filter(.rep <= 10)
+  )
+p6 <- p1 + cols +
+  geom_line(aes(y = .sim, group = replicate, colour = replicate), alpha = 0.5, data = sim) +
+  guides(colour = "none")
+p7 <- p1 +
+  geom_line(aes(y = .sim, group = replicate, colour = replicate), alpha = 0.5, col = "gray", data = sim) +
+  guides(colour = "none")
+p8 <- p7 + autolayer(fc, level = c(50, 90))
+p9 <- p8 + coord_cartesian(xlim=as.Date(c("2013-01-01","2021-08-01"))) +
+  scale_x_date(
+    breaks = seq(as.Date("2000-01-01"), by = "2 years", l = 11),
+    labels = paste("Jan", seq(2000, 2020, by = 2)),
+    minor_breaks = seq(as.Date("2001-01-01"), by = "1 year", l = 25)
+  ) 
+aligned_plots <- align_patches(p1, p2, p3, p4, p5, p6, p7, p8,p9)
+```
+
+## Random futures
+
+\forecast\pause
+
+```{r austa1, dependson="austa"}
+aligned_plots[[1]]
+```
+
+## Random futures
+
+\forecast
+
+```{r austa2, dependson='austa'}
+aligned_plots[[2]]
+```
+
+\simfutures
+
+## Random futures
+
+\forecast
+
+```{r austa3, dependson='austa'}
+aligned_plots[[3]]
+```
+
+\simfutures
+
+## Random futures
+
+\forecast
+
+```{r austa4, dependson='austa'}
+aligned_plots[[4]]
+```
+
+\simfutures
+
+## Random futures
+
+\forecast
+
+```{r austa5, dependson='austa'}
+aligned_plots[[5]]
+```
+
+\simfutures
+
+## Random futures
+
+\forecast
+
+```{r austa6, dependson='austa'}
+aligned_plots[[6]]
+```
+
+\simfutures
+
+## Random futures
+
+\forecast
+
+```{r austa7, dependson='austa'}
+aligned_plots[[7]]
+```
+
+\simfutures
+
+## Random futures
+
+\forecast
+
+```{r austa8, dependson='austa'}
+aligned_plots[[8]]
+```
+
+\simfutures
+
+## Random futures
+
+\forecast
+
+```{r austa9, dependson='austa'}
+aligned_plots[[9]]
+```
+
+\simfutures
+
+
+## Random futures
+
+\forecast
+
+```{r austa9b, dependson='austa'}
+aligned_plots[[9]] +
+  geom_line(
+    colour = "black",
+    data = austa %>% filter(Month >= yearmonth("2018 Jan")) %>% mutate(Month = as.Date(Month))
+  )
+```
+
+\simfutures
+
+
+
+## Forecastability factors
+\color{black}
+
+Something is easier to forecast if:
+
+ 1. we have a good understanding of the factors that contribute to it, and can measure them.
+ 2. there is lots of data available;
+ 3. the future is somewhat similar to the past
+ 4. the forecasts cannot affect the thing we are trying to forecast.
+
+## Forecasting by maggots
+
+\placefig{0.8}{1.5}{width=8cm}{sheepliverbm}
+
+\only<2>{\begin{textblock}{7}(8.5,1.7)
+\raggedright\large\color{black}
+\textbf{Clay model of sheep's liver}\\[0.4cm]
+Used by Bab\-ylon\-ian forecasters approximately 600 B.C.\\[0.7cm]
+Now in \rlap{British Museum.}
+\end{textblock}}
+
+## Forecasting by hallucination
+
+\only<1->{\placefig{0}{1.35}{height=8.25cm, width=20cm}{delphitemple}}
+\only<2>{\placefig{7}{1.35}{height=7.77cm, width=20cm}{1106}}
+
+## Forecasting and the law
+
+\placefig{10.1}{1.35}{width=6cm, height=20cm}{250px-Constance_II_Colosseo_Rome_Italy}
+
+\begin{textblock}{8}(1,1.8)\raggedright
+\begin{block}{}
+\color{black}
+Anyone who consults a soothsayer on account of curiosity of the future will suffer capital punishment.
+
+\mbox{}\hfill\emph{Codex Theodosianus 9.16.4}
+\end{block}
+\end{textblock}
+
+## International Journal of Forecasting
+
+\only<1>{\placefig{0}{1.35}{height=8.cm, width=20cm}{IJFcover}}
+
+\begin{textblock}{8}(7,2)\fontsize{16}{17}\sf
+\begin{block}{}
+\begin{itemize}
+\item Editor-in-Chief: 2005--2018
+\item Impact factor 2004: 0.4
+\item Impact factor 2018: 3.4
+\end{itemize}
+\end{block}
+\end{textblock}
+
+
+## More information
+\fontsize{20}{24}\sf
+
+\href{https://robjhyndman.com}{\faicon{home} robjhyndman.com}
+
+\href{https://twitter.com/robjhyndman}{\faicon{twitter} @robjhyndman}
+
+\href{https://github.com/robjhyndman}{\faicon{github}  @robjhyndman}
+
+\href{mailto:rob.hyndman@monash.edu}{\faicon{envelope}  rob.hyndman@monash.edu}
+
+\vspace*{0.8cm}\fontsize{19}{19}\sf
+
+###
+Slides: \texttt{\href{https://robjhyndman.com/aas2021}{robjhyndman.com/aas2021}}
+
