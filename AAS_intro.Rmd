@@ -93,8 +93,9 @@ localcases <- readRDS("localcases.rds")
 \only<4>{\placefig{0}{1.35}{height=9.2cm, width=20cm}{elecwires}
 \begin{textblock}{12}(0.2,8.8)\tiny\textcolor{gray}{\texttt{Varistor60, CC BY-SA 4.0, https://commons.wikimedia.org/w/index.php?curid=59368531}}
 \end{textblock}}
-\only<5>{\placefig{0}{1.35}{height=10.2cm, width=20cm}{12apostles}}
-\only<6>{\placefig{0}{1.35}{height=9.2cm, width=20cm}{covid}}
+\only<5>{\placefig{0}{1.35}{height=10.2cm, width=20cm, trim=0 0 0 60, clip=true}{supermarket}}
+\only<6>{\placefig{0}{1.35}{height=10.2cm, width=20cm}{12apostles}}
+\only<7>{\placefig{0}{1.35}{height=9.2cm, width=20cm}{covid}}
 
 ```{r austa}
 # Grab ABS data
