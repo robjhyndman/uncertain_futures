@@ -97,6 +97,30 @@ localcases <- readRDS("localcases.rds")
 \only<6>{\placefig{0}{1.35}{height=10.2cm, width=20cm}{12apostles}}
 \only<7>{\placefig{0}{1.35}{height=9.2cm, width=20cm}{covid}}
 
+## &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; packages
+
+\placefig{0.2}{.1}{height=1cm, width=20cm}{Rlogo}
+
+\placefig{2.2}{1.5}{height=2.9cm,width=2.9cm}{forecast}
+\placefig{4.7}{1.5}{height=2.9cm,width=2.9cm}{hts}
+\placefig{7.2}{1.5}{height=2.9cm,width=2.9cm}{thief}
+\placefig{9.7}{1.5}{height=2.9cm,width=2.9cm}{fasster}
+\placefig{12.2}{1.5}{height=2.9cm,width=2.9cm}{gratis}
+\placefig{1.}{3.7}{height=2.9cm,width=2.9cm}{tsibble}
+\placefig{3.45}{3.7}{height=2.9cm,width=2.9cm}{tsibbledata}
+\placefig{5.95}{3.7}{height=2.9cm,width=2.9cm}{feasts}
+\placefig{8.45}{3.7}{height=2.9cm,width=2.9cm}{fable}
+\placefig{10.95}{3.7}{height=2.9cm,width=2.9cm}{sugrrants}
+\placefig{13.5}{3.7}{height=2.9cm,width=2.9cm}{gravitas}
+\placefig{-.2}{5.9}{height=2.9cm,width=2.9cm}{seer}
+\placefig{2.2}{5.9}{height=2.9cm,width=2.9cm}{stray}
+\placefig{4.7}{5.9}{height=2.9cm,width=2.9cm}{oddstream}
+\placefig{7.2}{5.9}{height=2.9cm,width=2.9cm}{oddwater}
+\placefig{9.7}{5.9}{height=2.9cm,width=2.9cm}{lookout}
+\placefig{12.2}{5.9}{height=2.9cm,width=2.9cm}{vitae}
+
+
+
 ```{r austa}
 # Grab ABS data
 austa <- readxl::read_excel("340101.xls", sheet="Data1", skip=9) %>%
