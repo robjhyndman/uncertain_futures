@@ -135,7 +135,6 @@ Anyone who consults a soothsayer on account of curiosity of the future will suff
 ``We're going to be opening relatively soon \dots The virus \dots\ will go away in April.''\hfill{\small (Donald Trump, February 2020)}
 \end{alertblock}
 
-## What is a forecast?
 
 ```{r austa}
 # Grab ABS data
@@ -225,15 +224,15 @@ p9 <- p8 + coord_cartesian(xlim=as.Date(c("2014-01-01","2021-08-01"))) +
 aligned_plots <- align_patches(p1, p2, p3, p4, p5, p6, p7, p8,p9)
 ```
 
-## Random futures
+## What is a forecast?
 
-\forecast\pause
+\pause\forecast\pause
 
 ```{r austa1, dependson="austa"}
 aligned_plots[[1]]
 ```
 
-## Random futures
+## What is a forecast?
 
 \forecast
 
@@ -243,7 +242,7 @@ aligned_plots[[2]]
 
 \simfutures
 
-## Random futures
+## What is a forecast?
 
 \forecast
 
@@ -253,7 +252,7 @@ aligned_plots[[3]]
 
 \simfutures
 
-## Random futures
+## What is a forecast?
 
 \forecast
 
@@ -263,7 +262,7 @@ aligned_plots[[4]]
 
 \simfutures
 
-## Random futures
+## What is a forecast?
 
 \forecast
 
@@ -273,7 +272,7 @@ aligned_plots[[5]]
 
 \simfutures
 
-## Random futures
+## What is a forecast?
 
 \forecast
 
@@ -283,7 +282,7 @@ aligned_plots[[6]]
 
 \simfutures
 
-## Random futures
+## What is a forecast?
 
 \forecast
 
@@ -293,7 +292,7 @@ aligned_plots[[7]]
 
 \simfutures
 
-## Random futures
+## What is a forecast?
 
 \forecast
 
@@ -303,7 +302,7 @@ aligned_plots[[8]]
 
 \simfutures
 
-## Random futures
+## What is a forecast?
 
 \forecast
 
@@ -314,7 +313,7 @@ aligned_plots[[9]]
 \simfutures
 
 
-## Random futures
+## What is a forecast?
 
 \forecast
 
@@ -809,6 +808,36 @@ gamma <- tibble(
 actual <- 3
 ```
 
+```{r pdf00, dependson='qs'}
+# Single pdf graph for median
+prob <- 0.5
+qactual <- qgamma(prob, 2)
+gamma %>%
+  ggplot(aes(x = y, y = f)) +
+  geom_line() +
+  labs(y = "Forecast probability density", x = latex2exp::TeX("Quantile $q_{p}$")) +
+  coord_cartesian(ylim = c(-0, 0.375), xlim = c(0, 10), expand = FALSE, clip = "off")
+```
+
+
+## Evaluating probabilistic forecasts
+
+```{r pdf0, dependson='qs'}
+# Single pdf graph for median
+prob <- 0.5
+qactual <- qgamma(prob, 2)
+gamma %>%
+  ggplot(aes(x = y, y = f)) +
+  geom_line() +
+  geom_point(aes(x = actual, y = y), data = tibble(actual = actual, y = 0)) +
+  geom_label(aes(x = actual, y = 0.02, label = "Actual")) +
+  labs(y = "Forecast probability density", x = latex2exp::TeX("Quantile $q_{p}$")) +
+  coord_cartesian(ylim = c(-0, 0.375), xlim = c(0, 10), expand = FALSE, clip = "off")
+```
+
+
+## Evaluating probabilistic forecasts
+
 ```{r pdf1, dependson='qs'}
 # Single pdf graph for median
 prob <- 0.5
@@ -827,7 +856,6 @@ gamma %>%
   geom_label(aes(x = qactual, y = -0.01, label = "0.5 quantile"), col = "blue") +
   coord_cartesian(ylim = c(-0, 0.375), xlim = c(0, 10), expand = FALSE, clip = "off")
 ```
-
 
 ## Evaluating probabilistic forecasts
 
@@ -1019,14 +1047,6 @@ For weekly forecasts created from 17 September 2020 to 15 June 2021
 \end{block}
 \end{textblock}
 
-## When should we give up?
-\large
-
-* When there is insufficient data?
-* When the models give implausible forecasts?
-* When the forecast uncertainty is too large to assist decision making?
-
-
 # The bright future of forecasting
 
 ## The bright future of forecasting
@@ -1039,15 +1059,14 @@ For weekly forecasts created from 17 September 2020 to 15 June 2021
  * Are there many jobs for forecasters?
 
 ## More information
+
+\begin{alertblock}{}
 \fontsize{20}{24}\sf
-
-\href{https://robjhyndman.com}{\faicon{home} robjhyndman.com}
-
-\href{https://twitter.com/robjhyndman}{\faicon{twitter} @robjhyndman}
-
-\href{https://github.com/robjhyndman}{\faicon{github} @robjhyndman}
-
+\href{https://robjhyndman.com}{\faicon{home} robjhyndman.com}\\
+\href{https://twitter.com/robjhyndman}{\faicon{twitter} @robjhyndman}\\
+\href{https://github.com/robjhyndman}{\faicon{github} @robjhyndman}\\
 \href{mailto:rob.hyndman@monash.edu}{\faicon{envelope} rob.hyndman@monash.edu}
+\end{alertblock}
 
 \vspace*{0.8cm}\fontsize{19}{19}\sf
 
