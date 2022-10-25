@@ -721,8 +721,7 @@ localcases %>%
 
 ```{r combined_forecasts, eval=FALSE}
 # Read weekly samples files from mediaflux and save as rds file
-samples <- fs::dir_ls("~/mediaflux", glob = "*.csv") %>%
-  stringr::str_subset("combined_samples_202") %>%
+fs::dir_ls("outputs", glob = "*.csv") %>%
   purrr::map_dfr(read_csv) %>%
   nest(sample = sim1:sim2000) %>%
   group_by(date, state, .model, forecast_origin) %>%
@@ -731,12 +730,12 @@ samples <- fs::dir_ls("~/mediaflux", glob = "*.csv") %>%
   saveRDS(file = "samples.rds")
 ```
 
-```{r read_samples, eval=FALSE}
+```{r read_samples}
 samples <- readRDS("samples.rds")
 ensemble <- make_ensemble(samples)
 ```
 
-```{r some_plots, include=FALSE, eval=FALSE}
+```{r some_plots, include=FALSE}
 vic_ensemble <- ensemble %>% filter(state == "VIC")
 origins <- sort(unique(vic_ensemble$forecast_origin))
 origins <- origins[c(2, 8, 11, 33, 48, 88, 106)]
@@ -774,11 +773,11 @@ for (i in seq_along(origins)) {
   crop::dev.off.crop()
 }
 ```
-<!--
+
 \only<1>{\full{ensemble1}}
 \only<2>{\full{ensemble4}}
 \only<3>{\full{ensemble6}}
-\only<4>{\full{ensemble7}} -->
+\only<4>{\full{ensemble7}}
 
 ## Forecastability factors
 
@@ -1019,7 +1018,7 @@ for (i in seq_along(prob)) {
 
 ## CRPS: Continuous Ranked Probability Score
 
-```{r crps, eval=FALSE}
+```{r crps}
 crps <- bind_rows(
   ensemble %>% sample_crps(localcases) %>% mutate(Model = "Ensemble"),
   samples %>% filter(.model == "gar") %>% sample_crps(localcases) %>% mutate(Model = "Global AR"),
@@ -1028,7 +1027,7 @@ crps <- bind_rows(
 )
 ```
 
-```{r crps_plot, fig.height=4.6, fig.width=10, eval=FALSE}
+```{r crps_plot, fig.height=4.6, fig.width=10}
 crps %>%
   filter(
     h >= 1, h <= 20,
