@@ -720,7 +720,7 @@ localcases %>%
 ## Ensemble forecasts: Victoria
 
 ```{r combined_forecasts, eval=FALSE}
-# Read weekly samples files from mediaflux and save as rds file
+# Read weekly samples files from outputs folder and save as rds file
 fs::dir_ls("outputs", glob = "*.csv") %>%
   purrr::map_dfr(read_csv) %>%
   nest(sample = sim1:sim2000) %>%
