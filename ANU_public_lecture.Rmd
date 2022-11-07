@@ -1061,10 +1061,10 @@ For weekly forecasts created from 17 September 2020 to 15 June 2021
 
 \begin{alertblock}{}
 \fontsize{20}{24}\sf
-\href{https://robjhyndman.com}{\faicon{home} robjhyndman.com}\\
-\href{https://twitter.com/robjhyndman}{\faicon{twitter} @robjhyndman}\\
-\href{https://github.com/robjhyndman}{\faicon{github} @robjhyndman}\\
-\href{mailto:rob.hyndman@monash.edu}{\faicon{envelope} rob.hyndman@monash.edu}
+\href{https://robjhyndman.com}{\faIcon{home} robjhyndman.com}\\
+\href{https://aus.social/@robjhyndman}{\faIcon{mastodon} @robjhyndman@aus.social}\\
+\href{https://github.com/robjhyndman}{\faIcon{github} @robjhyndman}\\
+\href{mailto:rob.hyndman@monash.edu}{\faIcon{envelope} rob.hyndman@monash.edu}
 \end{alertblock}
 
 \vspace*{0.8cm}\fontsize{19}{19}\sf
