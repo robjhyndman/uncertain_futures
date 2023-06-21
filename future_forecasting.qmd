@@ -1,9 +1,9 @@
 ---
-title: "Uncertain futures: what can we forecast and when should we give up?"
+title: "Forecasting the future and the future of forecasting"
 author: "Rob J Hyndman"
-pdf-engine: pdflatex
-fig-width: 9
-fig-height: 4.5
+pdf-engine: latexmk
+fig-width: 7.5
+fig-height: 3.5
 format:
   beamer:
     theme: monash
@@ -14,9 +14,6 @@ format:
       opts_chunk:
         dev: "CairoPDF"
 include-in-header: header.tex
-cite-method: biblatex
-bibliography: hts.bib
-biblio-title: References
 highlight-style: tango
 keep-tex: true
 execute:
@@ -26,20 +23,15 @@ execute:
   cache: true
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(dev.args = list(pointsize = 11))
-options(digits = 3, width = 88)
-library(tidyverse)
-library(fpp3)
-library(distributional)
-library(patchwork)
-library(gganimate)
-source("functions.R")
+```{r setup}
+#| include: false
+#| cache: false
+source("setup.R")
 ```
 
 ```{r cover, include=FALSE}
 # Generate plot for title page
-pdf(file = "figure/cover.pdf", width = 5, height = 2.5)
+Cairo::CairoPDF(file = "figure/cover.pdf", width = 5, height = 2.5)
 austa <- readr::read_csv("http://OTexts.com/fpp3/extrafiles/austa.csv") %>%
   as_tsibble(index = Year)
 fit <- austa %>% model(ETS(Visitors))
@@ -88,88 +80,76 @@ localcases <- readr::read_csv("~/git/covid19ensemble/inputs/local_cases_input.cs
 saveRDS(localcases, "localcases.rds")
 ```
 
-```{r read_local, echo=FALSE}
+```{r read_local, echo=FALSE, include=FALSE}
 localcases <- readRDS("localcases.rds")
 ```
 
-# What can we forecast?
+## Outline
+
+\vspace*{0.7cm}\tableofcontents
+
+# The dark history of forecasting
+
+## Forecasting by maggots
+
+\placefig{0.4}{1.5}{width=8cm, height=7cm}{sheepliverbm}
+
+\begin{textblock}{6.7}(8.5,1.7)
+\raggedright\color{black}
+\textbf{Clay model of sheep's liver}\\[0.4cm]
+Used by Bab\-ylon\-ian forecasters approximately 600 B.C.\\[0.7cm]
+Now in \rlap{British Museum.}
+\end{textblock}
+
+## Forecasting by hallucination
+
+\only<1->{\placefig{0}{1.1}{height=8.25cm, width=20cm}{delphitemple}}
+\only<2>{\placefig{7}{1.1}{height=8cm, width=20cm}{1106}}
+
+## Forecasting and the law
+
+\placefig{10}{1.1}{width=6cm, height=20cm}{250px-Constance_II_Colosseo_Rome_Italy}
+
+\begin{textblock}{8}(1,1.8)\raggedright
+\begin{block}{}
+\color{black}
+Anyone who consults a soothsayer on account of curiosity of the future will suffer capital punishment.
+
+\mbox{}\hfill\emph{Codex Theodosianus 9.16.4}
+\end{block}
+\end{textblock}
 
 ## Reputations can be made and lost
 
-\begin{block}{}``I think there is a world market for maybe
-    five computers.'' \newline{\null\hfill\small (Chairman of IBM,
-    1943)}\end{block}\pause
+\vspace*{0.2cm}
+\begin{block}{}
+``I think there is a world market for maybe five computers.'' \newline
+{\null\hfill\small (Chairman of IBM, 1943)}
+\end{block}\pause
 
-\begin{block}{}``There is no reason anyone would want a
-    computer in their home.'' \newline\null\hfill{\small (President, DEC,
-    1977)}\end{block}\pause
+\begin{alertblock}{}
+``There is no reason anyone would want a computer in their home.''
+\null\hfill{\small (President, DEC, 1977)}
+\end{alertblock}\pause
 
-\begin{alertblock}{}``We're going to be opening relatively soon \dots The virus \dots\ will go away in April.''\hfill{\small (Donald Trump, February 2020)}\end{alertblock}\pause
+\begin{block}{}
+“There’s no chance that the iPhone is going to get any significant market share. No chance.”\newline
+\null\hfill{\small (Steve Ballmer, CEO Microsoft, April 2007)}
+\end{block}\pause
 
-\begin{alertblock}{}``We expect that Australians will be fully vaccinated by the end of October.''\hfill{\small (Scott Morrison, December 2020)}\end{alertblock}
+\begin{alertblock}{}
+``We're going to be opening relatively soon \dots The virus \dots\ will go away in April.''
+\hfill{\small (Donald Trump, February 2020)}
+\end{alertblock}
 
-## Forecasting is difficult
+# What is a forecast?
 
-\fullheight{hopecasts}
-
-## What can we forecast?
-
-\only<1>{\fullheight{AusBOM}}
-\only<2>{\placefig{0}{1.35}{height=10.8cm, width=20cm}{nasdaq-stock-market}}
-\only<3>{\placefig{0}{1.35}{height=10.2cm, width=20cm}{Forex2}}
-\only<4>{\placefig{0}{1.35}{height=11.2cm, width=20cm}{pills}}
-\only<5>{\placefig{0}{1.35}{height=9.2cm, width=20cm}{elecwires}
-\begin{textblock}{12}(0.2,8.8)\tiny\textcolor{gray}{\texttt{Varistor60, CC BY-SA 4.0, https://commons.wikimedia.org/w/index.php?curid=59368531}}
-\end{textblock}}
-\only<6>{\placefig{0}{1.35}{height=9.2cm, width=20cm}{covid}}
-\only<7>{\placefig{0}{1.35}{height=10.2cm, width=20cm}{12apostles}}
-
-## Which is easiest to forecast?
-
- * daily electricity demand in 3 days time
- * timing of next Halley's comet appearance
- * time of sunrise this day next year
- * Google stock price tomorrow
- * Google stock price in 6 months time
- * maximum temperature tomorrow
- * exchange rate of \$US/AUS next week
- * total sales of drugs in Australian pharmacies next month
-
-\vspace*{10cm}
-
-## Which is easiest to forecast?
-
- 1. time of sunrise this day next year
- 2. timing of next Halley's comet appearance
- 3. maximum temperature tomorrow
- 4. daily electricity demand in 3 days time
- 5. total sales of drugs in Australian pharmacies next month
- 6. Google stock price tomorrow
- 7. exchange rate of \$US/AUS next week
- 8. Google stock price in 6 months time
-
-\only<2>{\begin{block}{}\begin{itemize}\tightlist
- \item how do we measure ``easiest''?
- \item what makes something easy/difficult to forecast?
- \end{itemize}\end{block}}
-
-\vspace*{10cm}
-
-## Forecastability factors
-\color{black}
-
-Something is easier to forecast if:
-
- 1. we have a good understanding of the factors that contribute to it, and can measure them.
- 2. there is lots of data available;
- 3. the future is somewhat similar to the past
- 4. the forecasts cannot affect the thing we are trying to forecast.
-
-# The statistical forecasting perspective
+## Random futures
 
 ```{r austa}
+#| include: false
 # Grab ABS data
-austa <- readxl::read_excel("340101.xls", sheet="Data1", skip=9) %>%
+austa <- readxl::read_excel("340101.xlsx", sheet="Data1", skip=9) %>%
   rename(date = `Series ID`, value = A85375847A) %>%
   select(date, value) %>%
   transmute(
@@ -177,7 +157,7 @@ austa <- readxl::read_excel("340101.xls", sheet="Data1", skip=9) %>%
     Visitors = value / 1e3
   ) %>%
   bind_rows(tibble(
-    Month = yearmonth(seq(as.Date("2021-06-01"), by = "1 month", length = 7)),
+    Month = yearmonth(seq(as.Date("2021-11-01"), by = "1 month", length = 2)),
     Visitors = NA_real_
   )) %>%
   as_tsibble(index = Month) %>%
@@ -252,117 +232,108 @@ p9 <- p8 + coord_cartesian(xlim=as.Date(c("2013-01-01","2021-08-01"))) +
     labels = paste("Jan", seq(2000, 2020, by = 2)),
     minor_breaks = seq(as.Date("2001-01-01"), by = "1 year", l = 25)
   )
-aligned_plots <- align_patches(p1, p2, p3, p4, p5, p6, p7, p8,p9)
-```
-
-## Random futures
-
-\forecast\pause
-
-```{r austa1, dependson="austa"}
-aligned_plots[[1]]
-```
-
-## Random futures
-
-\forecast
-
-```{r austa2, dependson='austa'}
-aligned_plots[[2]]
-```
-
-\simfutures
-
-## Random futures
-
-\forecast
-
-```{r austa3, dependson='austa'}
-aligned_plots[[3]]
-```
-
-\simfutures
-
-## Random futures
-
-\forecast
-
-```{r austa4, dependson='austa'}
-aligned_plots[[4]]
-```
-
-\simfutures
-
-## Random futures
-
-\forecast
-
-```{r austa5, dependson='austa'}
-aligned_plots[[5]]
-```
-
-\simfutures
-
-## Random futures
-
-\forecast
-
-```{r austa6, dependson='austa'}
-aligned_plots[[6]]
-```
-
-\simfutures
-
-## Random futures
-
-\forecast
-
-```{r austa7, dependson='austa'}
-aligned_plots[[7]]
-```
-
-\simfutures
-
-## Random futures
-
-\forecast
-
-```{r austa8, dependson='austa'}
-aligned_plots[[8]]
-```
-
-\simfutures
-
-## Random futures
-
-\forecast
-
-```{r austa9, dependson='austa'}
-aligned_plots[[9]]
-```
-
-\simfutures
-
-
-## Random futures
-
-\forecast
-
-```{r austa9b, dependson='austa'}
+aligned_plots <- align_patches(p1, p2, p3, p4, p5, p6, p7, p8, p9)
+for(i in seq(length(aligned_plots))) {
+  Cairo::CairoPDF(file = paste0("figure/austa",i,".pdf"),
+                  width = 7.5, height=3.5)
+  print(aligned_plots[[i]])
+  crop::dev.off.crop()
+}
+Cairo::CairoPDF(file = paste0("figure/austa10.pdf"),
+                  width = 7.5, height=3.5)
 aligned_plots[[9]] +
   geom_line(
     colour = "black",
     data = austa %>% filter(Month >= yearmonth("2018 Jan")) %>% mutate(Month = as.Date(Month))
   )
+crop::dev.off.crop()
 ```
 
-\simfutures
+\forecast\pause\centering
+\only<1>{\includegraphics[width=14.5cm]{austa1}}
+\only<2>{\includegraphics[width=14.5cm]{austa2}}
+\only<3>{\includegraphics[width=14.5cm]{austa3}}
+\only<4>{\includegraphics[width=14.5cm]{austa4}}
+\only<5>{\includegraphics[width=14.5cm]{austa5}}
+\only<6>{\includegraphics[width=14.5cm]{austa6}}
+\only<7>{\includegraphics[width=14.5cm]{austa7}}
+\only<8>{\includegraphics[width=14.5cm]{austa8}}
+\only<9>{\includegraphics[width=14.5cm]{austa9}}
+\only<10->{\includegraphics[width=14.5cm]{austa10}}
+
+\only<2->{\simfutures}
+
+\only<11>{\begin{textblock}{8.5}(.3,6.8)\begin{alertblock}{}\fontsize{12}{13}\sf
+``He who sees the past as surprise-free is bound to have a future full of surprises.''\\\mbox{}\hfill{\small (Amos Tversky)}
+\end{alertblock}\end{textblock}
+}
+
+# What can we forecast?
+
+
+## Forecasting is difficult
+
+\fullheight{hopecasts}
+
+## What can we forecast?
+
+\only<1>{\fullheight{AusBOM}}
+\only<2>{\placefig{0}{1.}{height=10.8cm, width=20cm}{nasdaq-stock-market}}
+\only<3>{\placefig{0}{1.}{height=10.2cm, width=20cm}{Forex2}}
+\only<4>{\placefig{0}{1.}{height=11.2cm, width=20cm}{pills}}
+\only<5>{\placefig{0}{1.}{height=9.2cm, width=20cm}{elecwires}
+\begin{textblock}{12}(0.2,8.8)\tiny\textcolor{gray}{\texttt{Varistor60, CC BY-SA 4.0, https://commons.wikimedia.org/w/index.php?curid=59368531}}
+\end{textblock}}
+\only<6>{\placefig{0}{1.}{height=9.2cm, width=20cm}{covid}}
+\only<7>{\placefig{0}{1.}{height=10.2cm, width=20cm}{12apostles}}
+
+## Which is easiest to forecast?
+
+ * daily electricity demand in 3 days time
+ * timing of next Halley's comet appearance
+ * time of sunrise this day next year
+ * Google stock price tomorrow
+ * Google stock price in 6 months time
+ * maximum temperature tomorrow
+ * exchange rate of \$US/AUS next week
+ * total sales of drugs in Australian pharmacies next month
+
+\vspace*{10cm}
+
+## Which is easiest to forecast?
+
+ 1. time of sunrise this day next year
+ 2. timing of next Halley's comet appearance
+ 3. maximum temperature tomorrow
+ 4. daily electricity demand in 3 days time
+ 5. total sales of drugs in Australian pharmacies next month
+ 6. Google stock price tomorrow
+ 7. exchange rate of \$US/AUS next week
+ 8. Google stock price in 6 months time
+
+\only<2>{\begin{block}{}\begin{itemize}\tightlist
+ \item how do we measure ``easiest''?
+ \item what makes something easy/difficult to forecast?
+ \end{itemize}\end{block}}
+
+\vspace*{10cm}
+
+## Forecastability factors
+\color{black}
+
+Something is easier to forecast if:
+
+ 1. we have a good understanding of the factors that contribute to it, and can measure them.
+ 2. there is lots of data available;
+ 3. the future is somewhat similar to the past
+ 4. the forecasts cannot affect the thing we are trying to forecast.
+
 
 # Forecasting PBS expenditure
 
 ## Forecasting PBS expenditure
 
-\placefig{0}{1.35}{height=11.2cm, width=20cm}{pills}
+\placefig{0}{1}{height=11.2cm, width=20cm}{pills}
 
 ## Forecasting PBS expenditure
 
@@ -436,7 +407,7 @@ pbs %>%
 ```
 
 ## Forecasting PBS expenditure
-\fontsize{14}{15}\sf
+\fontsize{13.5}{15}\sf
 
   * Developed an automatic forecasting algorithm for exponential smoothing state space models based on the AIC.
   * Exponential smoothing models allowed for time-changing trend and seasonal patterns.
@@ -457,7 +428,7 @@ pbs %>%
 
 ## Forecasting peak electricity demand
 
-\placefig{0}{1.35}{height=9.2cm, width=20cm}{elecwires}
+\placefig{0}{1}{height=9.2cm, width=20cm}{elecwires}
 \begin{textblock}{12}(0.2,8.8)\tiny\textcolor{gray}{\texttt{Varistor60, CC BY-SA 4.0, https://commons.wikimedia.org/w/index.php?curid=59368531}}
 \end{textblock}
 
@@ -474,7 +445,7 @@ pbs %>%
 \vspace*{0.2cm}\pause
 \begin{center}
 \hspace*{6.7cm}\begin{beamerboxesrounded}[lower=block
-body,width={4.2cm}]{} \textbf{\alert{Sounds impossible?}}
+body,width={4.6cm}]{} \textbf{\alert{Sounds impossible?}}
 \end{beamerboxesrounded}
 \end{center}
 
@@ -537,10 +508,12 @@ print(aligned_plots[[2]])
 crop::dev.off.crop()
 ```
 
+\vspace*{0.2cm}
 \only<1>{\centerline{\includegraphics[width=14cm, height=20cm]{figure/elecscatter1.png}}}
 \only<2>{\centerline{\includegraphics[width=14cm, height=20cm]{figure/elecscatter2.png}}}
 
 ## Forecasting peak electricity demand
+\vspace*{0.2cm}
 
 ```{r elec5}
 df <- vic_elec %>%
@@ -552,7 +525,7 @@ df <- vic_elec %>%
   )
 states <- sort(unique(df$state))
 for (i in seq_along(states)) {
-  pdf(paste0(here::here("figure"), "/elec", i, ".pdf"),
+  Cairo::CairoPDF(paste0(here::here("figure"), "/elec", i, ".pdf"),
     width = 20 / 2.54, height = 10 / 2.54)
   p <- df %>%
     filter(state == states[i]) %>%
@@ -591,28 +564,11 @@ for (i in seq_along(states)) {
  3. the future is somewhat similar to the past
  4. the forecasts cannot affect the thing we are trying to forecast.
 
-# Forecasting post-pandemic tourism
-
-## Forecasting post-pandemic tourism
-
-\placefig{0}{1.35}{height=10.2cm, width=20cm}{12apostles}
-
-## Forecasting post-pandemic tourism
-
-\placefig{0.3}{1.4}{height=7.5cm, width=15cm}{arrivals}
-
-## Forecastability factors
-
- 1. we have a good understanding of the factors that contribute to it, and can measure them.
- 2. there is lots of data available;
- 3. the future is somewhat similar to the past
- 4. the forecasts cannot affect the thing we are trying to forecast.
-
 # Forecasting COVID19 cases
 
 ## Forecasting COVID19 cases
 
-\placefig{0}{1.35}{height=9.2cm, width=20cm}{covid}
+\placefig{0}{1}{height=9.2cm, width=20cm}{covid}
 
 ## Australian Health Protection Principal Committee
 
@@ -652,6 +608,7 @@ for (i in seq_along(states)) {
 * Daily case numbers from many countries and regions via the Johns Hopkins COVID-19 repository
 
 ## Case numbers
+\fontsize{13}{14}\sf
 
 ```{r, echo=FALSE, fig.height=2.9}
 state_colours <- c(
@@ -665,19 +622,27 @@ state_colours <- c(
   ACT = "#cccccc"
 )
 localcases %>%
-  autoplot(n) +
+  filter(date <= max(date)-3) |>
+  autoplot(n+1) +
   labs(x = "Date of symptom onset", y = "Number of daily cases") +
-  scale_x_date(breaks = seq(as.Date("2020-01-01"), by="1 month", length=24),
-               minor_breaks = NULL,
-               labels = c("J\n 2020","F","M","A","M","J","J","A","S","O","N","D",
-                          "J\n 2021","F","M","A","M","J","J","A","S","O","N","D")) +
-  scale_color_manual(values = state_colours)
+  scale_x_date(
+    breaks = seq(as.Date("2020-01-01"), by="1 month", length=35),
+    minor_breaks = NULL,
+    labels = c(
+      "J\n 2020","F","M","A","M","J","J","A","S","O","N","D",
+      "J\n 2021","F","M","A","M","J","J","A","S","O","N","D",
+      "J\n 2022","F","M","A","M","J","J","A","S","O","N")
+  ) +
+  scale_color_manual(values = state_colours) +
+  scale_y_log10(breaks = 10^(1:5),
+  labels = c("10","100","1000","10000","100000"))
 ```
 
 * Recent case numbers are uncertain and incomplete as date of onset is not known until symptoms show and a test is obtained.
 
 ## A model ensemble
 \fontsize{14}{16}\sf
+\vspace*{0.2cm}
 
 ### Model 1: SEEIIR (Uni Melbourne/Doherty Institute)
 
@@ -749,7 +714,7 @@ for (i in seq_along(origins)) {
     ) +
     theme(legend.position = "none") +
     xlab("Date of symptom onset") + ylab("Number of daily cases")
-  pdf(paste0(here::here("figure"), "/ensemble", i, ".pdf"),
+  Cairo::CairoPDF(paste0(here::here("figure"), "/ensemble", i, ".pdf"),
     width = 20 / 2.54, height = 10 / 2.54
   )
   print(p)
@@ -769,255 +734,29 @@ for (i in seq_along(origins)) {
  3. the future is somewhat similar to the past
  4. the forecasts cannot affect the thing we are trying to forecast.
 
-# Assessing forecast uncertainty
+# The bright future of forecasting
 
-## Evaluating probabilistic forecasts
+## The bright future of forecasting
+\fontsize{20}{24}\sf
 
-```{r qs, include=FALSE}
-# Run to generate the graphs
-qp <- function(p, y) {
-  if (length(p) > 1 & length(y) > 1) {
-    stop("Either p or y should be a scalar")
-  }
-  fp <- qgamma(p, 2)
-  2 * (1 - p) * abs(y - fp) * (y < fp) + 2 * p * abs(y - fp) * (y >= fp)
-}
-gamma <- tibble(
-  y = seq(0, 10, l = 101),
-  f = dgamma(y, 2)
-)
-actual <- 3
-```
-
-```{r pdf1, dependson='qs'}
-# Single pdf graph for median
-prob <- 0.5
-qactual <- qgamma(prob, 2)
-gamma %>%
-  ggplot(aes(x = y, y = f)) +
-  geom_line() +
-  geom_point(aes(x = actual, y = y), data = tibble(actual = actual, y = 0)) +
-  geom_label(aes(x = actual, y = 0.02, label = "Actual")) +
-  labs(y = "Forecast probability density", x = latex2exp::TeX("Quantile $q_{p}$")) +
-  geom_line(aes(x = y, y = f),
-    col = "blue", linetype = 2,
-    data = tibble(y = rep(qactual, 2), f = c(dgamma(qactual, 2), 0))
-  ) +
-  geom_label(aes(x = qactual, y = 0.02, label = "Median"), col = "blue") +
-  geom_label(aes(x = qactual, y = -0.01, label = "0.5 quantile"), col = "blue") +
-  coord_cartesian(ylim = c(-0, 0.375), xlim = c(0, 10), expand = FALSE, clip = "off")
-```
-
-
-## Evaluating probabilistic forecasts
-
-```{r pdf2, dependson='qs'}
-# Single pdf graph for 0.8 quantile
-prob <- 0.9
-qactual <- qgamma(prob, 2)
-gamma %>%
-  ggplot(aes(x = y, y = f)) +
-  geom_line() +
-  geom_point(aes(x = actual, y = y), data = tibble(actual = actual, y = 0)) +
-  geom_label(aes(x = actual, y = 0.02, label = "Actual")) +
-  labs(y = "Forecast probability density", x = latex2exp::TeX("Quantile $q_{p}$")) +
-  geom_line(aes(x = y, y = f),
-    col = "blue", linetype = 2,
-    data = tibble(y = rep(qactual, 2), f = c(dgamma(qactual, 2), 0))
-  ) +
-  geom_label(aes(x = qactual, y = -0.01, label = paste(sprintf("%.2f", prob), "quantile")), col = "blue") +
-  coord_cartesian(ylim = c(-0, 0.375), xlim = c(0, 10), expand = FALSE, clip = "off")
-```
-
-## Evaluating probabilistic forecasts
-
-```{r pdfqs, dependson='qs'}
-# pdf plus quantile score graph for several quantiles
-prob <- c(0.1, 0.3, 0.5, 0.7, 0.9)
-qactual <- qgamma(prob, 2)
-qpactual <- qp(prob, actual)
-for (i in seq_along(prob)) {
-  p1 <- gamma %>%
-    ggplot(aes(x = y, y = f)) +
-    geom_line() +
-    geom_point(aes(x = actual, y = y), data = tibble(actual = actual, y = 0)) +
-    labs(y = "Forecast probability density", x = latex2exp::TeX("Quantile $q_{p}$")) +
-    geom_line(aes(x = y, y = f),
-      col = "blue", linetype = 2,
-      data = tibble(y = rep(qactual[i], 2), f = c(dgamma(qactual[i], 2), 0))
-    ) +
-    geom_label(aes(x = actual, y = 0.03, label = "Actual")) +
-    geom_label(aes(x = qactual[i], y = -0.02, label = paste(sprintf("%.2f", prob[i]), "quantile")), col = "blue") +
-    coord_cartesian(ylim = c(-0, 0.375), xlim = c(0, 10), expand = FALSE, clip = "off")
-  p2 <- tibble(
-    y = seq(0, 10, l = 101),
-    Q = qp(prob[i], y)
-  ) %>%
-    ggplot(aes(x = y, y = Q)) +
-    geom_line() +
-    labs(
-      x = latex2exp::TeX("Quantile $q_{p}$"),
-      y = latex2exp::TeX("Quantile score $S_{p}$")
-    ) +
-    geom_line(aes(x = y, y = Q),
-      col = "red", linetype = 2,
-      data = tibble(y = c(actual, actual), Q = c(14.5, qpactual[i]))
-    ) +
-    geom_line(aes(x = y, y = Q),
-      col = "red", linetype = 2,
-      data = tibble(y = c(actual, 0), Q = rep(qpactual[i], 2))
-    ) +
-    geom_line(aes(x = y, y = f),
-      col = "blue", linetype = 2,
-      data = tibble(y = rep(qactual[i], 2), f = c(0, 13.5))
-    ) +
-    coord_cartesian(ylim = c(0, 11.6), xlim = c(0, 10), expand = FALSE, clip = "off")
-  pdf(paste0("figure/pdfqs", i, ".pdf"), width = 15 / 1.5, height = 8 / 1.5)
-  print(p1 / p2)
-  crop::dev.off.crop()
-}
-```
-
-\only<5>{\placefig{0.2}{1.4}{width=14.7cm,height=20cm}{pdfqs1}}
-\only<4>{\placefig{0.2}{1.4}{width=14.7cm,height=20cm}{pdfqs2}}
-\only<3>{\placefig{0.2}{1.4}{width=14.7cm,height=20cm}{pdfqs3}}
-\only<2>{\placefig{0.2}{1.4}{width=14.7cm,height=20cm}{pdfqs4}}
-\only<1>{\placefig{0.2}{1.4}{width=14.7cm,height=20cm}{pdfqs5}}
-
-## Evaluating probabilistic forecasts
-
-```{r pdfqs2, include=FALSE, dependson='qs'}
-qs <- seq(0, 10, l = 200)
-prob <- pgamma(qs, 2)
-prob <- c(prob[prob <= 0.999], 0.9999)
-for (i in seq_along(prob)) {
-  qactual <- qgamma(prob[i], 2)
-  qpactual <- qp(prob[i], actual)
-  p1 <- gamma %>%
-    ggplot(aes(x = y, y = f)) +
-    geom_line() +
-    geom_point(aes(x = actual, y = y), data = tibble(actual = actual, y = 0)) +
-    geom_label(aes(x = actual, y = 0.02, label = "Actual")) +
-    labs(y = "Forecasting probability density", x = latex2exp::TeX("Quantile $q_{p}$")) +
-    geom_line(aes(x = y, y = f),
-      col = "blue", linetype = 2,
-      data = tibble(y = rep(qactual, 2), f = c(dgamma(qactual, 2), -0.1))
-    ) +
-    coord_cartesian(ylim = c(-0, 0.375), xlim = c(0, 10), expand = FALSE, clip = "off")
-  p2 <- tibble(
-    y = seq(0, 10, l = 101),
-    Q = qp(prob[i], y)
-  ) %>%
-    ggplot(aes(x = y, y = Q)) +
-    geom_line() +
-    labs(
-      x = latex2exp::TeX("Quantile $q_{p}$"),
-      y = latex2exp::TeX("Quantile score $S_{p}$")
-    ) +
-    geom_line(aes(x = y, y = Q),
-      col = "red", linetype = 2,
-      data = tibble(y = rep(actual, 2), Q = c(14.5, qpactual))
-    ) +
-    geom_line(aes(x = y, y = Q),
-      col = "red", linetype = 2,
-      data = tibble(y = c(actual, -1), Q = rep(qpactual, 2))
-    ) +
-    geom_line(aes(x = y, y = f),
-      col = "blue", linetype = 2,
-      data = tibble(y = rep(qactual, 2), f = c(0, 12))
-    ) +
-    geom_label(aes(x = qactual, y = 11.6, label = paste(sprintf("%.3f", prob[i]), "quantile")), col = "blue") +
-    coord_cartesian(ylim = c(0, 11.6), xlim = c(0, 10), expand = FALSE, clip = "off")
-
-  p3data <- tibble(
-    p = prob,
-    Q = qp(prob, actual)
-  ) %>%
-    filter(p <= prob[i])
-  p3 <- p3data %>%
-    ggplot(aes(x = p, y = Q)) +
-    geom_line(col = "red") +
-    geom_polygon(
-      fill = "#ffbbbb",
-      data = bind_rows(p3data, tibble(p = prob[i], Q = 0))
-    ) +
-    geom_line(data = tibble(p = c(prob[i], 1), Q = rep(qpactual, 2)), col = "red", linetype = 2) +
-    # geom_point(data=tibble(p=prob[i],Q=qpactual), col='red') +
-    labs(
-      x = latex2exp::TeX("Probability p"),
-      y = latex2exp::TeX("Quantile score $S_{p}$")
-    ) +
-    coord_cartesian(ylim = c(0, 11.6), xlim = c(0, 1), expand = FALSE, clip = "off")
-
-  pdf(file = paste0("figure/qs", i, ".pdf"), width = 15 / 1.5, height = 8 / 1.5)
-  print((plot_spacer() | p1) / (p3 | p2))
-  crop::dev.off.crop()
-}
-```
-
-\begin{textblock}{18}(0.3,1.4)
-\animategraphics[width=14cm,height=20cm,keepaspectratio]{185}{figure/qs}{1}{185}
-\end{textblock}
-
-## Evaluating probabilistic forecasts
-
-\begin{textblock}{18}(0.3,1.4)
-\includegraphics[width=14cm,height=20cm,keepaspectratio]{figure/qs185}
-\end{textblock}
-
-\only<2>{\begin{textblock}{4}(2,7)\fontsize{11}{11}\sf
-\textcolor{red}{Area = CRPS}
-\end{textblock}}
-
-## CRPS: Continuous Ranked Probability Score
-
-```{r crps}
-crps <- bind_rows(
-  ensemble %>% sample_crps(localcases) %>% mutate(Model = "Ensemble"),
-  samples %>% filter(.model == "gar") %>% sample_crps(localcases) %>% mutate(Model = "Global AR"),
-  samples %>% filter(.model == "moss") %>% sample_crps(localcases) %>% mutate(Model = "SEEIIR"),
-  samples %>% filter(.model == "uoa") %>% sample_crps(localcases) %>% mutate(Model = "Generative")
-)
-```
-
-```{r crps_plot, fig.height=4.6, fig.width=10}
-crps %>%
-  filter(
-    h >= 1, h <= 20,
-    state %in% c("NSW", "QLD", "SA", "VIC")
-  ) %>%
-  ggplot(aes(x = h, y = crps, group = Model, col = Model)) +
-  geom_line() +
-  facet_wrap(. ~ state, scales = "free_y") +
-  labs(x = "Forecast horizon (days)", y = "Average CRPS") +
-  scale_color_manual(values = c("#D55E00", "#0072B2", "#009E73", "#CC79A7"))
-```
-
-\begin{textblock}{14.5}(0.5,8)
-\begin{block}{}
-For weekly forecasts created from 17 September 2020 to 15 June 2021
-\end{block}
-\end{textblock}
-
-## When should we give up?
-\large
-
-* When there is insufficient data?
-* When the models give implausible forecasts?
-* When the forecast uncertainty is too large to assist decision making?
+ * What about neural networks and deep learning?\pause
+ * Will we ever be able to forecast "black swans"?\pause
+ * Does more data mean better forecasts?\pause
+ * Will AI take over forecasting?\pause
+ * Are there many jobs for forecasters?
 
 ## More information
 \fontsize{20}{24}\sf
 
-\href{https://robjhyndman.com}{\faicon{home} robjhyndman.com}
+\href{https://robjhyndman.com}{\faIcon{home} robjhyndman.com}
 
-\href{https://twitter.com/robjhyndman}{\faicon{twitter} @robjhyndman}
+\href{https://twitter.com/robjhyndman}{\faIcon{twitter} @robjhyndman}
 
-\href{https://github.com/robjhyndman}{\faicon{github}  @robjhyndman}
+\href{https://github.com/robjhyndman}{\faIcon{github}  @robjhyndman}
 
-\href{mailto:rob.hyndman@monash.edu}{\faicon{envelope}  rob.hyndman@monash.edu}
+\href{mailto:rob.hyndman@monash.edu}{\faIcon{envelope}  rob.hyndman@monash.edu}
 
 \vspace*{0.8cm}\fontsize{19}{19}\sf
 
 ###
-Slides: \texttt{\href{https://robjhyndman.com/uncertain_futures}{robjhyndman.com/uncertain\_futures}}
+Slides: \texttt{\href{https://robjhyndman.com/future_forecasting}{robjhyndman.com/future\_forecasting}}

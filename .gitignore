@@ -14,3 +14,5 @@ figure/ensemble*.pdf
 figure/elec*.pdf
 figure/elecscatter*.png
 outputs
+*.synctex.gz
+*.fdb_latexmk
