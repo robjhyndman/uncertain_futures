@@ -9,9 +9,8 @@
 
 % Figures
 \graphicspath{{figure/}}
-\def\full#1{\vspace*{0.05cm}\centerline{\includegraphics[width=15cm,height=7.5cm,keepaspectratio=true]{#1}}}
-\def\fullwidth#1{\vspace*{-0.0cm}\par\centerline{\includegraphics[width=12.8cm, height=100cm]{#1}}}
-\def\fullheight#1{\vspace*{0.02cm}\par\centerline{\includegraphics[height=8.1cm,width=100cm]{#1}}}
+\def\fullwidth#1{\vspace*{0.15cm}\par\centerline{\includegraphics[width=15.8cm, height=100cm]{#1}}}
+\def\fullheight#1{\vspace*{0.15cm}\par\centerline{\includegraphics[height=8.1cm,width=100cm]{#1}}}
 
 \usepackage{tikz}
 \usetikzlibrary{trees,shapes}
@@ -33,21 +32,21 @@
 \par\vspace*{1.cm}\par
 \usebeamerfont{author}\insertauthor
 \end{textblock}
-\placefig{7.8}{7.7}{height=1.2cm,width=10cm}{optima}
+\placefig{8.3}{7.745}{height=.9cm,width=10cm,trim=0 0 165 0,clip=true}{optima}
 \begin{textblock}{7.5}(8.3,6.9)\fontsize{12}{30}\sf
 \begin{flushright}
 \fontsize{10}{10}\sf\texttt{\href{https://robjhyndman.com/seminars/anu2022}{robjhyndman.com/seminars/anu2022}}
-\par\vspace*{.25cm}\par
-\includegraphics[width=4cm]{monash_bw}
+\par\vspace*{.2cm}\par
+\includegraphics[width=4cm]{monash1line}
 \end{flushright}
 \end{textblock}
 }
 
-\def\forecast{\begin{alertblock}{}\fontsize{10}{11}\sf
+\def\forecast{\begin{alertblock}{}\fontsize{9}{10}\sf
 A forecast is an estimate of the probability distribution of a variable to be observed in the future.
 \end{alertblock}}
 
-\def\simfutures{\begin{textblock}{2.7}(13,7.7)
+\def\simfutures{\begin{textblock}{3}(12.75,7.6)
 \begin{block}{}\fontsize{10}{11}\sf
 Simulated futures from an ETS model
 \end{block}\end{textblock}}
