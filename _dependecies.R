@@ -1,4 +1,6 @@
+library(Cairo)
 library(codetools)
 library(languageserver)
 library(markdown)
-library(Cairo)
+library(rmarkdown)
+library(yaml)
