@@ -756,32 +756,35 @@ gamma <- tibble(
 )
 ```
 
-```{r pdf00, dependson='qs'}
+```{r pdf, dependson='qs'}
 #| message: false
 #| warning: false
 #| include: false
 # PDF graph for gamma distribution
+actual <- 3
+prob <- c(0.1, 0.3, 0.5, 0.7, 0.9)
+np <- length(prob)
+qactual <- qgamma(prob, 2)
+qpactual <- qp(prob, actual)
+plist <- vector("list", np+2)
+labels <- paste(sprintf("%.2f", prob[i]), "quantile")
+
 p <- gamma |>
   ggplot(aes(x = y, y = f)) +
   geom_line() +
   labs(y = "Forecast probability density", x = latex2exp::TeX("Quantile $q_{p}$")) +
   coord_cartesian(ylim = c(-0, 0.375), xlim = c(0, 10), expand = FALSE, clip = "off")
-Cairo::CairoPDF("figure/pdf00.pdf", width = 15 / 1.5, height = 7.5 / 1.5)
-print(p)
-crop::dev.off.crop(file = paste0("figure/pdf00", i, ".pdf"))
-```
 
-```{r pdf0, dependson='qs'}
-#| message: false
-#| warning: false
-#| include: false
-# Add actual value
-actual <- 3
+Cairo::CairoPDF("figure/pdf00.pdf", width = 15 / 1.5, height = 7.5 / 1.5)
+print(p / plot_spacer())
+crop::dev.off.crop(file = paste0("figure/pdf00", i, ".pdf"))
+
 p <- p +
   geom_point(aes(x = actual, y = y), data = tibble(actual = actual, y = 0)) +
   geom_label(aes(x = actual, y = 0.02, label = "Actual"))
+
 Cairo::CairoPDF("figure/pdf0.pdf", width = 15 / 1.5, height = 7.5 / 1.5)
-print(p)
+print(p /plot_spacer())
 crop::dev.off.crop(file = paste0("figure/pdf0", i, ".pdf"))
 ```
 
@@ -828,9 +831,9 @@ for (i in seq_along(prob)) {
       col = "blue", linetype = 2,
       data = tibble(y = rep(qactual[i], 2), f = c(0, 13.5))
     ) +
-    coord_cartesian(ylim = c(0, 11.6), xlim = c(0, 10), expand = FALSE, clip = "off")
+    coord_cartesian(ylim = c(0, 2), xlim = c(0, 10), expand = FALSE, clip = "off")
   Cairo::CairoPDF(paste0("figure/pdf", i, ".pdf"), width = 15 / 1.5, height = 7.5 / 1.5)
-  print(p1)
+  print(p1 / plot_spacer())
   crop::dev.off.crop(file = paste0("figure/pdf", i, ".pdf"))
   Cairo::CairoPDF(paste0("figure/pdfqs", i, ".pdf"), width = 15 / 1.5, height = 7.5 / 1.5)
   print(p1 / p2)
@@ -838,21 +841,18 @@ for (i in seq_along(prob)) {
 }
 ```
 
-\only<1>{\placefig{0.2}{1.4}{width=14.7cm,height=20cm}{pdf00}}
-\only<2>{\placefig{0.2}{1.4}{width=14.7cm,height=20cm}{pdf0}}
-\only<7>{\placefig{0.2}{1.4}{width=14.7cm,height=20cm}{pdf1}}
-\only<6>{\placefig{0.2}{1.4}{width=14.7cm,height=20cm}{pdf2}}
-\only<5>{\placefig{0.2}{1.4}{width=14.7cm,height=20cm}{pdf3}}
-\only<4>{\placefig{0.2}{1.4}{width=14.7cm,height=20cm}{pdf4}}
-\only<3>{\placefig{0.2}{1.4}{width=14.7cm,height=20cm}{pdf5}}
-
-## Evaluating probabilistic forecasts
-
-\only<5>{\placefig{0.2}{1.4}{width=14.7cm,height=20cm}{pdfqs1}}
-\only<4>{\placefig{0.2}{1.4}{width=14.7cm,height=20cm}{pdfqs2}}
-\only<3>{\placefig{0.2}{1.4}{width=14.7cm,height=20cm}{pdfqs3}}
-\only<2>{\placefig{0.2}{1.4}{width=14.7cm,height=20cm}{pdfqs4}}
-\only<1>{\placefig{0.2}{1.4}{width=14.7cm,height=20cm}{pdfqs5}}
+\only<1>{\placefig{0.2}{1.4}{width=15.7cm,height=20cm}{pdf00}}
+\only<2>{\placefig{0.2}{1.4}{width=15.7cm,height=20cm}{pdf0}}
+\only<3>{\placefig{0.2}{1.4}{width=15.7cm,height=20cm}{pdf5}}
+\only<4>{\placefig{0.2}{1.4}{width=15.7cm,height=20cm}{pdf4}}
+\only<5>{\placefig{0.2}{1.4}{width=15.7cm,height=20cm}{pdf3}}
+\only<6>{\placefig{0.2}{1.4}{width=15.7cm,height=20cm}{pdf2}}
+\only<7>{\placefig{0.2}{1.4}{width=15.7cm,height=20cm}{pdf1}}
+\only<8>{\placefig{0.2}{1.4}{width=15.7cm,height=20cm}{pdfqs1}}
+\only<9>{\placefig{0.2}{1.4}{width=15.7cm,height=20cm}{pdfqs2}}
+\only<10>{\placefig{0.2}{1.4}{width=15.7cm,height=20cm}{pdfqs3}}
+\only<11>{\placefig{0.2}{1.4}{width=15.7cm,height=20cm}{pdfqs4}}
+\only<12>{\placefig{0.2}{1.4}{width=15.7cm,height=20cm}{pdfqs5}}
 
 ## Evaluating probabilistic forecasts
 
@@ -896,8 +896,8 @@ for (i in seq_along(prob)) {
       col = "blue", linetype = 2,
       data = tibble(y = rep(qactual, 2), f = c(0, 12))
     ) +
-    geom_label(aes(x = qactual, y = 11.6, label = paste(sprintf("%.3f", prob[i]), "quantile")), col = "blue") +
-    coord_cartesian(ylim = c(0, 11.6), xlim = c(0, 10), expand = FALSE, clip = "off")
+    geom_label(aes(x = qactual, y = 2, label = paste(sprintf("%.3f", prob[i]), "quantile")), col = "blue") +
+    coord_cartesian(ylim = c(0, 2), xlim = c(0, 10), expand = FALSE, clip = "off")
 
   p3data <- tibble(
     p = prob,
@@ -917,7 +917,7 @@ for (i in seq_along(prob)) {
       x = latex2exp::TeX("Probability p"),
       y = latex2exp::TeX("Quantile score $S_{p}$")
     ) +
-    coord_cartesian(ylim = c(0, 11.6), xlim = c(0, 1), expand = FALSE, clip = "off")
+    coord_cartesian(ylim = c(0, 2), xlim = c(0, 1), expand = FALSE, clip = "off")
 
   Cairo::CairoPDF(file = paste0("figure/qs", i, ".pdf"), width = 15 / 1.5, height = 7.5 / 1.5)
   print((plot_spacer() | p1) / (p3 | p2))
