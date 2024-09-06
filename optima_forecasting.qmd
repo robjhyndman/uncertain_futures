@@ -736,208 +736,21 @@ for (i in seq_along(origins)) {
 
 # Assessing forecast uncertainty
 
-## Evaluating probabilistic forecasts
+## Assessing forecast uncertainty
 
-```{r qs, include=FALSE}
-#| message: false
-#| warning: false
-#| include: false
-# Run to generate the graphs
-qp <- function(p, y) {
-  if (length(p) > 1 & length(y) > 1) {
-    stop("Either p or y should be a scalar")
-  }
-  fp <- qgamma(p, 2)
-  2 * (1 - p) * abs(y - fp) * (y < fp) + 2 * p * abs(y - fp) * (y >= fp)
-}
-gamma <- tibble(
-  y = seq(0, 10, l = 101),
-  f = dgamma(y, 2)
-)
-```
-
-```{r pdf, dependson='qs'}
-#| message: false
-#| warning: false
-#| include: false
-# PDF graph for gamma distribution
-actual <- 3
-prob <- c(0.1, 0.3, 0.5, 0.7, 0.9)
-np <- length(prob)
-qactual <- qgamma(prob, 2)
-qpactual <- qp(prob, actual)
-plist <- vector("list", np+2)
-labels <- paste(sprintf("%.2f", prob[i]), "quantile")
-
-p <- gamma |>
-  ggplot(aes(x = y, y = f)) +
-  geom_line() +
-  labs(y = "Forecast probability density", x = latex2exp::TeX("Quantile $q_{p}$")) +
-  coord_cartesian(ylim = c(-0, 0.375), xlim = c(0, 10), expand = FALSE, clip = "off")
-
-Cairo::CairoPDF("figure/pdf00.pdf", width = 15 / 1.5, height = 7.5 / 1.5)
-print(p / plot_spacer())
-crop::dev.off.crop(file = paste0("figure/pdf00", i, ".pdf"))
-
-p <- p +
-  geom_point(aes(x = actual, y = y), data = tibble(actual = actual, y = 0)) +
-  geom_label(aes(x = actual, y = 0.02, label = "Actual"))
-
-Cairo::CairoPDF("figure/pdf0.pdf", width = 15 / 1.5, height = 7.5 / 1.5)
-print(p /plot_spacer())
-crop::dev.off.crop(file = paste0("figure/pdf0", i, ".pdf"))
-```
-
-```{r pdfqs, dependson='qs'}
-#| message: false
-#| warning: false
-#| include: false
-# pdf plus quantile score graph for several quantiles
-prob <- c(0.1, 0.3, 0.5, 0.7, 0.9)
-qactual <- qgamma(prob, 2)
-qpactual <- qp(prob, actual)
-for (i in seq_along(prob)) {
-  p1 <- gamma |>
-    ggplot(aes(x = y, y = f)) +
-    geom_line() +
-    geom_point(aes(x = actual, y = y), data = tibble(actual = actual, y = 0)) +
-    labs(y = "Forecast probability density", x = latex2exp::TeX("Quantile $q_{p}$")) +
-    geom_line(aes(x = y, y = f),
-      col = "blue", linetype = 2,
-      data = tibble(y = rep(qactual[i], 2), f = c(dgamma(qactual[i], 2), 0))
-    ) +
-    geom_label(aes(x = actual, y = 0.03, label = "Actual")) +
-    geom_label(aes(x = qactual[i], y = -0.02, label = paste(sprintf("%.2f", prob[i]), "quantile")), col = "blue") +
-    coord_cartesian(ylim = c(-0, 0.375), xlim = c(0, 10), expand = FALSE, clip = "off")
-  p2 <- tibble(
-    y = seq(0, 10, l = 101),
-    Q = qp(prob[i], y)
-  ) |>
-    ggplot(aes(x = y, y = Q)) +
-    geom_line() +
-    labs(
-      x = latex2exp::TeX("Quantile $q_{p}$"),
-      y = latex2exp::TeX("Quantile score $S_{p}$")
-    ) +
-    geom_line(aes(x = y, y = Q),
-      col = "red", linetype = 2,
-      data = tibble(y = c(actual, actual), Q = c(14.5, qpactual[i]))
-    ) +
-    geom_line(aes(x = y, y = Q),
-      col = "red", linetype = 2,
-      data = tibble(y = c(actual, 0), Q = rep(qpactual[i], 2))
-    ) +
-    geom_line(aes(x = y, y = f),
-      col = "blue", linetype = 2,
-      data = tibble(y = rep(qactual[i], 2), f = c(0, 13.5))
-    ) +
-    coord_cartesian(ylim = c(0, 2), xlim = c(0, 10), expand = FALSE, clip = "off")
-  Cairo::CairoPDF(paste0("figure/pdf", i, ".pdf"), width = 15 / 1.5, height = 7.5 / 1.5)
-  print(p1 / plot_spacer())
-  crop::dev.off.crop(file = paste0("figure/pdf", i, ".pdf"))
-  Cairo::CairoPDF(paste0("figure/pdfqs", i, ".pdf"), width = 15 / 1.5, height = 7.5 / 1.5)
-  print(p1 / p2)
-  crop::dev.off.crop(file = paste0("figure/pdfqs", i, ".pdf"))
-}
-```
-
-\only<1>{\placefig{0.2}{1.4}{width=15.7cm,height=20cm}{pdf00}}
-\only<2>{\placefig{0.2}{1.4}{width=15.7cm,height=20cm}{pdf0}}
-\only<3>{\placefig{0.2}{1.4}{width=15.7cm,height=20cm}{pdf5}}
-\only<4>{\placefig{0.2}{1.4}{width=15.7cm,height=20cm}{pdf4}}
-\only<5>{\placefig{0.2}{1.4}{width=15.7cm,height=20cm}{pdf3}}
-\only<6>{\placefig{0.2}{1.4}{width=15.7cm,height=20cm}{pdf2}}
-\only<7>{\placefig{0.2}{1.4}{width=15.7cm,height=20cm}{pdf1}}
-\only<8>{\placefig{0.2}{1.4}{width=15.7cm,height=20cm}{pdfqs1}}
-\only<9>{\placefig{0.2}{1.4}{width=15.7cm,height=20cm}{pdfqs2}}
-\only<10>{\placefig{0.2}{1.4}{width=15.7cm,height=20cm}{pdfqs3}}
-\only<11>{\placefig{0.2}{1.4}{width=15.7cm,height=20cm}{pdfqs4}}
-\only<12>{\placefig{0.2}{1.4}{width=15.7cm,height=20cm}{pdfqs5}}
-
-## Evaluating probabilistic forecasts
-
-```{r pdfqs2, include=FALSE, dependson='qs'}
-qs <- seq(0, 10, l = 200)
-prob <- pgamma(qs, 2)
-prob <- c(prob[prob <= 0.999], 0.9999)
-for (i in seq_along(prob)) {
-  qactual <- qgamma(prob[i], 2)
-  qpactual <- qp(prob[i], actual)
-  p1 <- gamma |>
-    ggplot(aes(x = y, y = f)) +
-    geom_line() +
-    geom_point(aes(x = actual, y = y), data = tibble(actual = actual, y = 0)) +
-    geom_label(aes(x = actual, y = 0.02, label = "Actual")) +
-    labs(y = "Forecasting probability density", x = latex2exp::TeX("Quantile $q_{p}$")) +
-    geom_line(aes(x = y, y = f),
-      col = "blue", linetype = 2,
-      data = tibble(y = rep(qactual, 2), f = c(dgamma(qactual, 2), -0.1))
-    ) +
-    coord_cartesian(ylim = c(-0, 0.375), xlim = c(0, 10), expand = FALSE, clip = "off")
-  p2 <- tibble(
-    y = seq(0, 10, l = 101),
-    Q = qp(prob[i], y)
-  ) |>
-    ggplot(aes(x = y, y = Q)) +
-    geom_line() +
-    labs(
-      x = latex2exp::TeX("Quantile $q_{p}$"),
-      y = latex2exp::TeX("Quantile score $S_{p}$")
-    ) +
-    geom_line(aes(x = y, y = Q),
-      col = "red", linetype = 2,
-      data = tibble(y = rep(actual, 2), Q = c(14.5, qpactual))
-    ) +
-    geom_line(aes(x = y, y = Q),
-      col = "red", linetype = 2,
-      data = tibble(y = c(actual, -1), Q = rep(qpactual, 2))
-    ) +
-    geom_line(aes(x = y, y = f),
-      col = "blue", linetype = 2,
-      data = tibble(y = rep(qactual, 2), f = c(0, 12))
-    ) +
-    geom_label(aes(x = qactual, y = 2, label = paste(sprintf("%.3f", prob[i]), "quantile")), col = "blue") +
-    coord_cartesian(ylim = c(0, 2), xlim = c(0, 10), expand = FALSE, clip = "off")
-
-  p3data <- tibble(
-    p = prob,
-    Q = qp(prob, actual)
-  ) |>
-    filter(p <= prob[i])
-  p3 <- p3data |>
-    ggplot(aes(x = p, y = Q)) +
-    geom_line(col = "red") +
-    geom_polygon(
-      fill = "#ffbbbb",
-      data = bind_rows(p3data, tibble(p = prob[i], Q = 0))
-    ) +
-    geom_line(data = tibble(p = c(prob[i], 1), Q = rep(qpactual, 2)), col = "red", linetype = 2) +
-    # geom_point(data=tibble(p=prob[i],Q=qpactual), col='red') +
-    labs(
-      x = latex2exp::TeX("Probability p"),
-      y = latex2exp::TeX("Quantile score $S_{p}$")
-    ) +
-    coord_cartesian(ylim = c(0, 2), xlim = c(0, 1), expand = FALSE, clip = "off")
-
-  Cairo::CairoPDF(file = paste0("figure/qs", i, ".pdf"), width = 15 / 1.5, height = 7.5 / 1.5)
-  print((plot_spacer() | p1) / (p3 | p2))
-  crop::dev.off.crop(file = paste0("figure/qs", i, ".pdf"))
-}
-```
-
-\begin{textblock}{18}(0.3,1.4)
-\animategraphics[width=14cm,height=20cm,keepaspectratio]{185}{figure/qs}{1}{185}
+\includegraphics[width=14.5cm]{austa10}
+\only<2>{
+\begin{textblock}{7.3}(0.9,1.6)\begin{alertblock}{}\fontsize{12}{13}\sf
+\begin{itemize}\itemsep = 0.2cm
+\item A 90\% prediction interval will contain the actual values 90\% of the time.
+\item A good prediction interval will be as narrow as possible.
+\item We want these properties for all possible prediction intervals.
+\item A probability score is a measure across all possible prediction intervals that balances calibration (coverage) with sharpness (narrow intervals).
+\end{itemize}
+\end{alertblock}
 \end{textblock}
+}
 
-## Evaluating probabilistic forecasts
-
-\begin{textblock}{18}(0.3,1.4)
-\includegraphics[width=14cm,height=20cm,keepaspectratio]{figure/qs185}
-\end{textblock}
-
-\only<2>{\begin{textblock}{4}(2,7)\fontsize{11}{11}\sf
-\textcolor{red}{Area = CRPS}
-\end{textblock}}
 
 ## CRPS: Continuous Ranked Probability Score
 
@@ -963,7 +776,7 @@ crps |>
   scale_color_manual(values = c("#D55E00", "#0072B2", "#009E73", "#CC79A7"))
 ```
 
-\begin{textblock}{14.5}(0.5,8)
+\begin{textblock}{14.5}(0.5,8)\fontsize{13}{15}\sf
 \begin{block}{}
 For weekly forecasts created from 17 September 2020 to 15 June 2021
 \end{block}
@@ -994,5 +807,6 @@ For weekly forecasts created from 17 September 2020 to 15 June 2021
 
 \vspace*{0.8cm}\fontsize{19}{19}\sf
 
-###
+\begin{block}{}
 Slides: \texttt{\href{https://robjhyndman.com/future_forecasting}{robjhyndman.com/future\_forecasting}}
+\end{block}
