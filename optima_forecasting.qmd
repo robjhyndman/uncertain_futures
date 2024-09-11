@@ -638,11 +638,11 @@ localcases |>
   labels = c("10","100","1000","10000","100000"))
 ```
 
-* Recent case numbers are uncertain and incomplete as date of onset is not known until symptoms show and a test is obtained.
+* Later case numbers are uncertain and incomplete as date of onset is not known until symptoms show and a test is obtained.
 
 ## A model ensemble
-\fontsize{14}{16}\sf
-\vspace*{0.2cm}
+\fontsize{14}{14}\sf
+\vspace*{0.1cm}
 
 ### Model 1: SEEIIR (Uni Melbourne/Doherty Institute)
 
